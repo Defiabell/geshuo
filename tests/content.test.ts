@@ -7,6 +7,10 @@ const DATA_DIR = new URL('../src/data/', import.meta.url).pathname;
 
 const scene: Scene = {
   id: 's', title: 'T', situation: 'X',
+  roles: {
+    mom: { name: '妈妈', voice: 'adult_female', mood: '生气' },
+    kid: { name: '孩子', voice: 'adult_male', mood: '敷衍' },
+  },
   beats: [
     { id: 'b1', order: 1, intent: 'i1', speakerRole: 'mom' },
     { id: 'b2', order: 2, intent: 'i2', speakerRole: 'kid' },
@@ -121,10 +125,11 @@ describe('validateContent', () => {
     expect(() => validateContent(scenes, [p], dialects)).toThrow(/source 非法/);
   });
 
-  it('场景 beat 的 speakerRole 不在已知集合内时抛错——否则剪影会被静默调暗、TTS 情绪指令会静默清空', () => {
+  it('beat 用了 roles 里没声明的角色时抛错——否则合成时查不到声色和情绪，出来一个用错嗓子的版本而页面看不出异常', () => {
     const badScene: Scene = {
       id: 's3', title: 'T', situation: 'X',
-      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'dad' as Scene['beats'][number]['speakerRole'] }],
+      roles: { mom: { name: '妈妈', voice: 'adult_female' } },
+      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'dad' }],
     };
     const scenes = new Map([['s3', badScene]]);
     expect(() => validateContent(scenes, [], dialects)).toThrow(/speakerRole 非法：dad/);
@@ -133,11 +138,30 @@ describe('validateContent', () => {
   it('speakerRole 校验不依赖场景是否已有演绎——空场景骨架也要过检查', () => {
     const badScene: Scene = {
       id: 's4', title: 'T', situation: 'X',
-      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'grandpa' as Scene['beats'][number]['speakerRole'] }],
+      roles: {},
+      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'grandpa' }],
     };
     const scenes = new Map([['s4', badScene]]);
     // performances 为空数组，证明这条校验独立于 performances 循环
     expect(() => validateContent(scenes, [], dialects)).toThrow(/speakerRole 非法/);
+  });
+
+  it('角色的 voice 不是合法声色档位时抛错——不能等到合成时才炸，那时已经花过钱了', () => {
+    const badScene: Scene = {
+      id: 's5', title: 'T', situation: 'X',
+      roles: { mom: { name: '妈妈', voice: 'grandma' as Scene['roles'][string]['voice'] } },
+      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'mom' }],
+    };
+    expect(() => validateContent(new Map([['s5', badScene]]), [], dialects)).toThrow(/voice 非法/);
+  });
+
+  it("'none' 是空拍保留值，不能拿来当角色名", () => {
+    const badScene: Scene = {
+      id: 's6', title: 'T', situation: 'X',
+      roles: { none: { name: '无', voice: 'adult_male' } },
+      beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'none' }],
+    };
+    expect(() => validateContent(new Map([['s6', badScene]]), [], dialects)).toThrow(/空拍保留值/);
   });
 });
 

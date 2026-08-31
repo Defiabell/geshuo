@@ -1,113 +1,149 @@
-import { SPEAKER_ROLES } from '../../../src/lib/types';
-import type { SpeakerRole } from '../../../src/lib/types';
+import { VOICE_PROFILES } from '../../../src/lib/types';
+import type { VoiceProfile } from '../../../src/lib/types';
 
 export interface VoiceSpec {
   model: string;
   voice: string;
+  /** 这个音色实际说的方言，用于日志与测试断言 */
   dialect: string;
   /**
-   * CosyVoice 系（cosyvoice-v3-flash）里靠指令切换方言的系统音色（比如
-   * longanhuan_v3）需要额外带一句固定格式的指令文本（「请用<方言>表达。」）——
-   * 已经是方言专属音色的（比如东北话的 longlaotie_v3）不需要，留空。
-   * 只有 cosyvoice-v3-flash 这条路径会用到这个字段。
+   * 方言切换指令（固定格式「请用<方言>表达。」）。
+   * 只有走 instruction 路径的音色需要——音色本身就是方言专属的（比如粤语的
+   * Rocky、东北话的 longlaotie_v3）留空。
    */
   dialectInstruction?: string;
 }
 
 /**
- * 方言节点 → 音色。
+ * 方言 × 声色 → 音色。
  *
- * 这份映射经过两轮核对：
+ * ## 为什么是二维表
  *
- * 第一轮（2026-08-31）：brief 里所有方言都指向 `qwen-audio-3.0-tts-flash` 的
- * `chelsie` 音色，核对后发现 `chelsie`（千雪）是纯普通话音色，五个方言共用
- * 一个普通话音色等于全员假方言。改成：`chengyu`（四川话）→ `qwen3-tts-flash` +
- * `Sunny`，`yue`（粤语）→ `qwen3-tts-flash` + `Rocky`（官方音色列表核实过这两个
- * 是真实方言音色，见 qwen-tts-voice-list）；`jilu`/`jiaoliao`/`dongbei` 当时判定
- * 云端没有对应方言音色，标成本地 CosyVoice 兜底。
+ * 一开始是一维的（一个方言一个音色），结果一场家庭戏里妈妈和孩子共用一副
+ * 嗓子，两个人听起来是同一个人在自问自答。声色必须跟着角色走，所以查表键
+ * 变成「方言 × 声色档位」，档位由场景自己声明（src/data/scenes/*.yaml 的
+ * roles[].voice）。
  *
- * 第二轮（code review 后复查）：第一轮漏查了一件事——「CosyVoice 3」不等于
- * 「本地自建推理」，阿里云百炼本身就托管了 CosyVoice v3 作为云端模型
- * （`cosyvoice-v3-flash` / `cosyvoice-v3-plus`），音色表跟 Qwen3-TTS 系列是
- * 分开的两张表。核对 CosyVoice 音色列表（见下方文档链接）确认：
+ * ## 选音色的规则：方言专属音色优先
  *
- * - `longanhuan_v3`（龙安欢）：支持 instruct 方言切换，官方列出的方言清单
- *   原文是「普通话、广东话、东北话、河南话、湖南话、陕西话、山东话、四川话、
- *   安徽话」——包含山东话。指令格式固定为「请用<方言>表达。」。
- * - `longlaotie_v3`（龙老铁）：官方标注「东北直率男」，是东北话专属音色，
- *   不需要 instruct 就能出东北口音。
+ * 有两条能出方言的路：
  *
- * 所以 `jilu` 和 `dongbei` 改成走云端 `cosyvoice-v3-flash`，不用再退到本地。
- * `jiaoliao`（青岛话/胶辽官话）维持本地——CosyVoice 音色表里没有青岛专属音色，
- * 而「山东话」这个 instruct 大类能不能准确覆盖胶辽官话的口音，机器猜不出来，
- * 必须真人听测后才能下结论，不该由代码替用户假设着直接套上去。
+ * 1. **方言专属音色**——音色本身就说那个方言（四川的 Sunny/Eric、粤语的
+ *    Kiki/Rocky、东北话的 longlaotie_v3）。不需要任何指令，方言是音色自带的。
+ * 2. **instruction 指令切换**——通用音色 + 一句「请用山东话表达。」。
  *
- * 参考文档：
- * - 方言/音色对照表：https://help.aliyun.com/zh/model-studio/qwen-tts-voice-list
- *   （Qwen3-TTS 系）、https://help.aliyun.com/zh/model-studio/cosyvoice-voice-list
- *   （CosyVoice 系，longanhuan_v3/longlaotie_v3 的方言清单在这页）
- * - CosyVoice HTTP API 请求/响应结构：
- *   https://help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api
- *   ——请求 URL 是工作空间专属端点 `{WorkspaceId}.cn-beijing.maas.aliyuncs.com`，
- *   不是 qwen3-tts-flash 用的公共 `dashscope.aliyuncs.com`；这意味着 jilu/dongbei
- *   这条云端路径要跑通，除了 DASHSCOPE_API_KEY，还得先在百炼控制台把
- *   cosyvoice-v3-flash 部署到一个工作空间、拿到 WorkspaceId——不是纯粹换个模型名
- *   就能零配置直接调用，见 generate-audio.ts 里 DASHSCOPE_WORKSPACE_ID 的说明。
+ * 有专属音色就用专属的，这是默认规则：让模型模仿一个口音，不如用一个本来
+ * 就在说这个口音的音色。只有在没有专属音色时（山东话就没有）才走指令路径。
  *
- * 无论哪种情况都刻意不设默认值：某个方言没有确认过的音色，voiceFor() 就要
- * 抛错，不允许静默退回普通话。
+ * ## 关于 instruction 的实测结论（2026-09-01，真实 API，非文档推断）
+ *
+ * 这里踩过一个静默出错的大坑，值得写清楚以免重蹈：
+ *
+ * **`cosyvoice-v3-flash` 完全无视 `instruct` 字段。** 用同一段文本、同一个
+ * 音色（longanhuan_v3），分别传「用非常生气的口气说」「用悲伤的口气说」
+ * 「请用山东话表达。」「请用河南话表达。」和完全不传——**五次返回的音频
+ * 字节完全相同（md5 一致）**。字段名换成 `instruction` 会被引擎拒成 428，
+ * 换到 `parameters` 层级同样无效。也就是说：之前靠「longanhuan_v3 + 请用
+ * 山东话表达。」生成的所谓冀鲁官话，根本不是山东话，是这个音色的默认普通话
+ * ——正是本项目最不能犯的错（静默退回普通话），而且发生在作者自己的家乡话上。
+ *
+ * **正确的指令路径是 `qwen-audio-3.0-tts-flash`**（同一个
+ * /api/v1/services/audio/tts/SpeechSynthesizer 端点），字段是 `input.instruction`。
+ * 实测：带方言指令与不带指令输出不同（指令确实生效），且情绪指令可以和方言
+ * 指令叠加（「请用山东话表达。用非常生气的口气说。」与只有方言指令的输出不同）。
+ * 这个模型的系统音色是另一套（带 _v3.6 后缀），实测可用的有：
+ * `longanhuan_v3.6`（女）、`loongjohn`（男）、`longjielidou_v3.6`、
+ * `loongeva_v3.6`；Qwen3-TTS 那套名字（Sunny/Rocky/Cherry…）在这个模型上一律 400。
+ *
+ * **判断指令有没有生效的办法**：同一段文本跑两次，一次带指令一次不带，比 md5。
+ * 相同就是被无视了——这个对照比读文档可靠，文档在这件事上误导过两次。
+ *
+ * ## 音色出处
+ * - Qwen3-TTS 方言音色表：https://help.aliyun.com/zh/model-studio/qwen-tts-voice-list
+ *   （Sunny 四川女 / Eric 四川男 / Rocky 粤语男 / Kiki 粤语女，均已实测可用）
+ * - CosyVoice 音色表：https://help.aliyun.com/zh/model-studio/cosyvoice-voice-list
+ *   （longlaotie_v3 东北话专属男声）
+ * - 两张表都没有山东话专属音色，所以冀鲁官话只能走 instruction 路径。
+ *
+ * 任何方言 × 声色查不到，voiceFor() 一律抛错——不允许静默退回普通话，也不
+ * 允许拿邻近方言顶替。这是产品红线。
  */
-const VOICES: Record<string, VoiceSpec> = {
-  jilu: {
-    model: 'cosyvoice-v3-flash',
-    voice: 'longanhuan_v3',
-    dialect: '山东话',
-    dialectInstruction: '请用山东话表达。',
+export const INSTRUCT_MODEL = 'qwen-audio-3.0-tts-flash';
+
+const VOICES: Record<string, Partial<Record<VoiceProfile, VoiceSpec>>> = {
+  // 四川话：有成对的方言专属音色，不需要任何指令
+  chengyu: {
+    adult_female: { model: 'qwen3-tts-flash', voice: 'Sunny', dialect: '四川话' },
+    adult_male: { model: 'qwen3-tts-flash', voice: 'Eric', dialect: '四川话' },
   },
-  jiaoliao: { model: 'cosyvoice3-local', voice: 'qingdao', dialect: '青岛话' },
-  chengyu: { model: 'qwen3-tts-flash', voice: 'Sunny', dialect: '四川话' },
-  dongbei: { model: 'cosyvoice-v3-flash', voice: 'longlaotie_v3', dialect: '东北话' },
-  yue: { model: 'qwen3-tts-flash', voice: 'Rocky', dialect: '粤语' },
+  // 粤语：同样有成对的方言专属音色
+  yue: {
+    adult_female: { model: 'qwen3-tts-flash', voice: 'Kiki', dialect: '粤语' },
+    adult_male: { model: 'qwen3-tts-flash', voice: 'Rocky', dialect: '粤语' },
+  },
+  // 东北话：男声有专属音色（龙老铁），女声没有，只能走指令
+  dongbei: {
+    adult_female: {
+      model: INSTRUCT_MODEL,
+      voice: 'longanhuan_v3.6',
+      dialect: '东北话',
+      dialectInstruction: '请用东北话表达。',
+    },
+    adult_male: { model: 'cosyvoice-v3-flash', voice: 'longlaotie_v3', dialect: '东北话' },
+  },
+  // 山东话：两张音色表里都没有专属音色，男女都只能走指令路径
+  jilu: {
+    adult_female: {
+      model: INSTRUCT_MODEL,
+      voice: 'longanhuan_v3.6',
+      dialect: '山东话',
+      dialectInstruction: '请用山东话表达。',
+    },
+    adult_male: {
+      model: INSTRUCT_MODEL,
+      voice: 'loongjohn',
+      dialect: '山东话',
+      dialectInstruction: '请用山东话表达。',
+    },
+  },
+  // 胶辽官话（青岛）刻意留空：没有胶辽专属音色，而「山东话」这个指令大类
+  // 能不能覆盖胶东口音，机器判断不了，必须真人听测。留空 → voiceFor 抛错，
+  // 好过悄悄套一个听起来像济南话的东西冒充青岛话。
 };
 
-export function voiceFor(dialectId: string): VoiceSpec {
-  const v = VOICES[dialectId];
-  if (!v) throw new Error(`方言 ${dialectId} 没有可用音色——不要退回普通话，先确认模型是否支持`);
-  return v;
-}
-
-// Record<SpeakerRole, string> 是穷举类型（键来自 src/lib/types.ts 的
-// SPEAKER_ROLES 唯一真源）——少写或写错一个角色，TS 编译期就会报错，
-// 不会留到运行时才发现某个角色查不到指令。
-const INSTRUCTS: Record<SpeakerRole, string> = {
-  mom: '用非常生气、音量大、语速快的口气说，像家长在训孩子',
-  kid: '用不耐烦、敷衍、声音偏小的口气说',
-  none: '',
-};
-
-export function instructFor(speakerRole: SpeakerRole): string {
-  // 运行时防线：speakerRole 实际来自 YAML 解析后的 `as Performance/Scene`
-  // 断言，TS 的类型保证在这里不是真的运行时保证。之前的 `?? ''` 会让一个
-  // 拼错的角色悄悄退回"无情绪指令"，进而让 generate-audio.ts 用错模型
-  // （少了 qwen3-tts-instruct-flash）合成出没有情绪的音频——不允许静默降级，
-  // 未知角色直接抛错，参照本文件 voiceFor() 的既定做法。
-  if (!SPEAKER_ROLES.includes(speakerRole)) {
+export function voiceFor(dialectId: string, profile: VoiceProfile): VoiceSpec {
+  if (!VOICE_PROFILES.includes(profile)) {
+    throw new Error(`未知声色档位 ${profile}——必须是 ${VOICE_PROFILES.join(' / ')} 之一`);
+  }
+  const byProfile = VOICES[dialectId];
+  if (!byProfile) {
+    throw new Error(`方言 ${dialectId} 没有可用音色——不要退回普通话，先确认模型是否支持`);
+  }
+  const spec = byProfile[profile];
+  if (!spec) {
     throw new Error(
-      `未知的 speakerRole：${speakerRole}——不要静默返回空指令，先确认这个角色是否遗漏`,
+      `方言 ${dialectId} 没有 ${profile} 档的可用音色（现有：${Object.keys(byProfile).join(' / ')}）——` +
+        '不要拿别的档位顶替，也不要退回普通话',
     );
   }
-  return INSTRUCTS[speakerRole];
+  return spec;
+}
+
+/**
+ * 把情绪指令和方言切换指令拼成一句下发给模型的 instruction。
+ * 顺序是「方言在前、情绪在后」：方言是这句话的底，情绪是加在底上的。
+ * 两者都为空则返回空串，调用方据此决定是否带这个字段。
+ */
+export function instructionFor(mood: string | undefined, spec: VoiceSpec): string {
+  return [spec.dialectInstruction, mood].filter(Boolean).join('');
 }
 
 /**
  * 百炼语音合成计费字符数：1 个汉字算 2 个有效字符，英文字母、全角/半角标点
- * 符号均算 1 个字符——这条规则原文核对过阿里云计费说明（智能语音交互计费
- * 文档：「1个汉字算2个有效字符，英文字母、全半角标点符号均算1个有效字符」），
- * brief 里的规则本身是对的，但实现有一个静默 bug：brief 的正则
- * `/[一-鿿　-〿＀-￯]/` 把 CJK 标点符号区（U+3000–U+303F）和全角 ASCII 变体区
- * （U+FF00–U+FFEF，包含全角标点如「？」「，」）也算进了「翻倍」范围，导致中文
- * 句子里的全角标点被多计了一倍——这就是「代价高的隐性 bug」，已在这里改成只
- * 匹配 CJK 统一表意文字本身（U+4E00–U+9FFF），标点和其余字符一律按 1 计。
+ * 符号均算 1 个字符——核对过阿里云计费说明原文（「1个汉字算2个有效字符，
+ * 英文字母、全半角标点符号均算1个有效字符」）。只匹配 CJK 统一表意文字本身
+ * （U+4E00–U+9FFF）；CJK 标点区和全角 ASCII 变体区不翻倍，否则中文句子里的
+ * 「？」「，」会被多计一倍。
  */
 export function countBilledChars(text: string): number {
   let n = 0;

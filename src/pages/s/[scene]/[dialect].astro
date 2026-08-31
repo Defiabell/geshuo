@@ -1,7 +1,6 @@
 ---
 import { join } from 'node:path';
 import Base from '../../../layouts/Base.astro';
-import PaperWindow from '../../../components/PaperWindow.astro';
 import DialectChips from '../../../components/DialectChips.astro';
 import GrainNotice from '../../../components/GrainNotice.astro';
 import LineCard from '../../../components/LineCard.astro';
@@ -49,8 +48,6 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
     <h1>{scene.title}</h1>
     <p class="situation">{scene.situation}</p>
   </header>
-
-  <PaperWindow />
 
   <DialectChips
     dialects={siblings}

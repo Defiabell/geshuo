@@ -1,10 +1,7 @@
-import type { SpeakerRole } from '../lib/types';
-
 const FALLBACK_MS = 2600;
 
 export function initPlayer(root: HTMLElement): void {
   const lines = Array.from(root.querySelectorAll<HTMLElement>('.line'));
-  const figures = Array.from(document.querySelectorAll<SVGGElement>('[data-fig]'));
   const playAll = root.querySelector<HTMLButtonElement>('#playAll');
   let audio: HTMLAudioElement | null = null;
   let timer: number | null = null;
@@ -18,19 +15,6 @@ export function initPlayer(root: HTMLElement): void {
 
   const clear = () => {
     lines.forEach((l) => l.classList.remove('active'));
-    figures.forEach((f) => f.classList.remove('dim', 'hot'));
-  };
-
-  // who 的取值来自 LineCard.astro 渲染的 data-who={beat.speakerRole}，
-  // 类型跟 tts.ts 的 INSTRUCTS 映射表同源自 SpeakerRole（src/lib/types.ts）——
-  // validateContent() 已在构建期保证这里不会收到未知角色，不需要再猜一个默认值。
-  const light = (who: SpeakerRole) => {
-    figures.forEach((f) => {
-      const isSpeaker = f.dataset.fig === who;
-      f.classList.toggle('hot', isSpeaker);
-      f.classList.toggle('dim', who !== 'none' && !isSpeaker);
-      if (who === 'none') f.classList.add('dim');
-    });
   };
 
   const stopAudio = () => {
@@ -47,7 +31,6 @@ export function initPlayer(root: HTMLElement): void {
   const focus = (line: HTMLElement, onEnd?: () => void) => {
     lines.forEach((l) => l.classList.remove('active'));
     line.classList.add('active');
-    light((line.dataset.who as SpeakerRole | undefined) ?? 'none');
     const myGen = ++generation;
     const src = line.dataset.audio;
     if (src) {

@@ -35,6 +35,10 @@ describe('buildPrompt', () => {
       id: 'test-scene',
       title: '测试场景',
       situation: '测试用',
+      roles: {
+        mom: { name: '妈妈', voice: 'adult_female' },
+        kid: { name: '孩子', voice: 'adult_male' },
+      },
       beats: [
         { id: 'kickoff', order: 1, intent: '开场白', speakerRole: 'mom' },
         { id: 'wrapup', order: 2, intent: '收尾', speakerRole: 'kid' },

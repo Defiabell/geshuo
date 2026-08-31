@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { PERFORMANCE_SOURCES, SPEAKER_ROLES, VERIFICATIONS } from './types';
+import { NO_SPEAKER, PERFORMANCE_SOURCES, VERIFICATIONS, VOICE_PROFILES } from './types';
 import type { Dialect, DialectLevel, Performance, PerformanceLine, Scene } from './types';
 
 /** TTS 到不了县级颗粒——point（点）与 subcluster（小片）都在县域颗粒上，禁止挂 TTS 演绎 */
@@ -34,15 +34,32 @@ export function validateContent(
   dialects: Map<string, Dialect>,
 ): void {
   // 场景骨架本身要先过关，不依赖是否已经有演绎——下一步内容动作就是加场景
-  // 骨架，写骨架不该被"还没配演绎"挡住检查。speakerRole 拼错会被两个消费方
-  // 静默吞掉（player.ts 把所有剪影调暗、tts.ts 的情绪指令悄悄退回空串），
-  // 所以在这里就拦住，不留到运行时才发现。
+  // 骨架，写骨架不该被"还没配演绎"挡住检查。
+  //
+  // 角色现在由场景自己声明（scene.roles），所以这里校验两件事：
+  // 1. 每个角色的 voice 是合法声色档位——写错会让 voiceFor() 在合成时才炸，
+  //    而那时已经花过钱了；
+  // 2. 每个 beat 的 speakerRole 要么是保留值 'none'（空拍），要么在 roles 里
+  //    声明过——拼错一个角色名，generate-audio.ts 会查不到声色和情绪，
+  //    合成出一个用错嗓子的版本，而页面上看不出任何异常。
   for (const scene of scenes.values()) {
+    for (const [key, role] of Object.entries(scene.roles ?? {})) {
+      if (key === NO_SPEAKER) {
+        throw new Error(`场景 ${scene.id}：'${NO_SPEAKER}' 是空拍保留值，不能拿来当角色名`);
+      }
+      if (!VOICE_PROFILES.includes(role.voice)) {
+        throw new Error(
+          `场景 ${scene.id} 的角色 ${key}：voice 非法：${role.voice}——` +
+            `必须是 ${VOICE_PROFILES.join(' / ')} 之一`,
+        );
+      }
+    }
     for (const beat of scene.beats) {
-      if (!SPEAKER_ROLES.includes(beat.speakerRole)) {
+      const known = beat.speakerRole === NO_SPEAKER || beat.speakerRole in (scene.roles ?? {});
+      if (!known) {
         throw new Error(
           `场景 ${scene.id} 的 beat ${beat.id}：speakerRole 非法：${beat.speakerRole}——` +
-            `必须是 ${SPEAKER_ROLES.join(' / ')} 之一`,
+            `必须是 '${NO_SPEAKER}' 或 roles 里声明过的角色（${Object.keys(scene.roles ?? {}).join(' / ') || '当前没有声明任何角色'}）`,
         );
       }
     }

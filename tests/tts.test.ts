@@ -1,65 +1,87 @@
 import { describe, it, expect } from 'vitest';
-import { voiceFor, instructFor, countBilledChars } from '../scripts/gen/src/tts';
+import { voiceFor, instructionFor, countBilledChars, INSTRUCT_MODEL } from '../scripts/gen/src/tts';
 
-describe('voiceFor', () => {
-  it('冀鲁官话映射到山东话音色', () => {
-    expect(voiceFor('jilu').dialect).toBe('山东话');
+describe('voiceFor：方言 × 声色', () => {
+  it('同一个方言的两个声色档位必须是不同音色——否则妈妈和孩子共用一副嗓子', () => {
+    for (const dialect of ['jilu', 'chengyu', 'yue', 'dongbei']) {
+      const f = voiceFor(dialect, 'adult_female');
+      const m = voiceFor(dialect, 'adult_male');
+      expect(f.voice, `${dialect} 的男女声撞车了`).not.toBe(m.voice);
+    }
   });
 
-  it('粤语用支持粤语的模型', () => {
-    expect(voiceFor('yue').dialect).toBe('粤语');
+  it('每个方言的每个档位都真的在说那个方言，没有普通话混进来', () => {
+    const expected: Record<string, string> = {
+      jilu: '山东话',
+      chengyu: '四川话',
+      yue: '粤语',
+      dongbei: '东北话',
+    };
+    for (const [dialect, name] of Object.entries(expected)) {
+      for (const profile of ['adult_female', 'adult_male'] as const) {
+        expect(voiceFor(dialect, profile).dialect).toBe(name);
+      }
+    }
   });
 
   it('没有对应音色的方言要抛错而不是悄悄退回普通话', () => {
-    expect(() => voiceFor('nonexistent')).toThrow(/没有可用音色/);
+    expect(() => voiceFor('nonexistent', 'adult_female')).toThrow(/没有可用音色/);
   });
 
-  // 以下几条是核实阿里云百炼官方文档后补的回归测试——
-  // 见 scripts/gen/src/tts.ts 顶部注释里引用的文档出处。
-
-  it('成渝片（四川话）有云端方言音色，用 qwen3-tts-flash', () => {
-    const v = voiceFor('chengyu');
-    expect(v.dialect).toBe('四川话');
-    expect(v.model).toBe('qwen3-tts-flash');
+  it('有这个方言但没有这个声色档位，也要抛错而不是拿别的档位顶替', () => {
+    expect(() => voiceFor('jilu', 'young_female')).toThrow(/没有 young_female 档/);
   });
 
-  it('冀鲁官话（山东话）用 CosyVoice 云端的 longanhuan_v3 + 方言 instruct，不必再退回本地', () => {
-    // 第一轮曾判定云端没有山东话音色，标成本地——那是漏查了阿里云百炼自己
-    // 也托管 CosyVoice v3 作为云端模型这件事。CosyVoice 音色列表核实过
-    // longanhuan_v3 支持的方言清单里明确包含"山东话"。
-    const v = voiceFor('jilu');
-    expect(v.model).toBe('cosyvoice-v3-flash');
-    expect(v.voice).toBe('longanhuan_v3');
-    expect(v.dialectInstruction).toMatch(/山东话/);
+  it('胶辽官话（青岛话）刻意没有音色——没有胶辽专属音色，「山东话」指令能否覆盖胶东口音必须真人听测', () => {
+    expect(() => voiceFor('jiaoliao', 'adult_female')).toThrow(/没有可用音色/);
   });
 
-  it('东北官话用 CosyVoice 的东北话专属音色 longlaotie_v3，不需要额外 instruct', () => {
-    const v = voiceFor('dongbei');
-    expect(v.model).toBe('cosyvoice-v3-flash');
-    expect(v.voice).toBe('longlaotie_v3');
-    expect(v.dialect).toBe('东北话');
+  // 回归测试：这一条钉住的是花过钱的教训。cosyvoice-v3-flash 实测完全无视
+  // instruct 字段（五种指令输出 md5 相同），所以任何**依赖方言指令**的音色
+  // 都不能落在这个模型上——否则出来的是普通话，而页面上标着方言。
+  it('凡是靠 dialectInstruction 出方言的音色，必须落在支持 instruction 的模型上', () => {
+    for (const dialect of ['jilu', 'chengyu', 'yue', 'dongbei']) {
+      for (const profile of ['adult_female', 'adult_male'] as const) {
+        const spec = voiceFor(dialect, profile);
+        if (spec.dialectInstruction) {
+          expect(spec.model, `${dialect}/${profile} 靠指令出方言，却落在无视指令的 ${spec.model} 上`)
+            .toBe(INSTRUCT_MODEL);
+        }
+      }
+    }
   });
 
-  it('胶辽官话（青岛话）没有专属云端音色，继续走本地——"山东话"这个 instruct 大类是否准确覆盖胶辽口音，必须真人听测，不能由代码替用户假设', () => {
-    expect(voiceFor('jiaoliao').model).toBe('cosyvoice3-local');
+  it('山东话没有专属音色，男女两档都必须走 instruction 路径并带上方言指令', () => {
+    for (const profile of ['adult_female', 'adult_male'] as const) {
+      const spec = voiceFor('jilu', profile);
+      expect(spec.model).toBe(INSTRUCT_MODEL);
+      expect(spec.dialectInstruction).toMatch(/山东话/);
+    }
+  });
+
+  it('有方言专属音色的（四川/粤语）不带方言指令——方言是音色自带的', () => {
+    for (const dialect of ['chengyu', 'yue']) {
+      for (const profile of ['adult_female', 'adult_male'] as const) {
+        expect(voiceFor(dialect, profile).dialectInstruction).toBeUndefined();
+      }
+    }
   });
 });
 
-describe('instructFor', () => {
-  it('妈妈这一方带怒气', () => {
-    expect(instructFor('mom')).toMatch(/生气|愤怒/);
+describe('instructionFor', () => {
+  it('方言指令在前、情绪在后拼成一句', () => {
+    const spec = voiceFor('jilu', 'adult_female');
+    const s = instructionFor('用非常生气的口气说。', spec);
+    expect(s.indexOf('山东话')).toBeLessThan(s.indexOf('生气'));
   });
 
-  it('空拍不给指令', () => {
-    expect(instructFor('none')).toBe('');
+  it('没有方言指令时只剩情绪', () => {
+    const spec = voiceFor('chengyu', 'adult_female');
+    expect(instructionFor('用生气的口气说。', spec)).toBe('用生气的口气说。');
   });
 
-  it('未知 speakerRole 抛错而不是悄悄退回空指令', () => {
-    // instructFor 的类型签名收窄成了 SpeakerRole，但运行时的值实际来自
-    // YAML `as Scene` 断言，类型保证不是运行时保证——用 as 强转模拟一个
-    // 拼错的角色，验证这里不会静默退回 ''（那会让 generate-audio.ts
-    // 悄悄换成不带情绪的模型）。
-    expect(() => instructFor('dad' as Parameters<typeof instructFor>[0])).toThrow(/未知的 speakerRole/);
+  it('两者都没有时返回空串，调用方据此不发这个字段', () => {
+    expect(instructionFor(undefined, voiceFor('chengyu', 'adult_male'))).toBe('');
   });
 });
 
@@ -70,7 +92,7 @@ describe('countBilledChars', () => {
     expect(countBilledChars('你好ab')).toBe(6);
   });
 
-  // 回归测试：核实阿里云计费规则原文是「1个汉字算2个有效字符，英文字母、
+  // 回归测试：阿里云计费规则原文是「1个汉字算2个有效字符，英文字母、
   // 全半角标点符号均算1个有效字符」——标点（包括中文全角标点）不翻倍。
   it('中文标点算一个字符，不跟着汉字翻倍', () => {
     expect(countBilledChars('你好？')).toBe(5);

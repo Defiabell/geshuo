@@ -1,7 +1,6 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import PaperWindow from '../components/PaperWindow.astro';
 import { loadDialects } from '../lib/dialect-tree';
 import { loadScenes, loadPerformances, validateContent } from '../lib/content';
 
@@ -39,8 +38,6 @@ const cards = Array.from(scenes.values())
       在德州、青岛、广州之间横着听过去。
     </p>
   </header>
-
-  <PaperWindow />
 
   <section>
     <h2>挑一出戏</h2>

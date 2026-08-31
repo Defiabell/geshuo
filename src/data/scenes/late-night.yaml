@@ -1,6 +1,20 @@
 id: late-night
 title: 深夜回家
 situation: 快十二点了才进家门，客厅灯还亮着，妈妈坐在沙发上没睡。
+
+# 角色由场景自己声明：换个场景就是另一套角色（摊主/顾客、亲戚/你）。
+# voice 是声色档位，各方言各自去找自己有的、对得上这一档的真实方言音色。
+# 孩子这一拍在加班——是个已经工作的成年子女，不是小孩，所以走成年男声。
+roles:
+  mom:
+    name: 妈妈
+    voice: adult_female
+    mood: 用非常生气、音量大、语速快的口气说，像家长在训孩子
+  kid:
+    name: 孩子
+    voice: adult_male
+    mood: 用不耐烦、敷衍、声音偏小的口气说
+
 beats:
   - id: b1
     order: 1
