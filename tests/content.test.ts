@@ -168,10 +168,11 @@ describe('validateContent', () => {
 describe('linesForBeat', () => {
   it('跨演绎取出同一拍，用于横向对比', () => {
     const ps = loadPerformances(DATA_DIR);
-    const got = linesForBeat(ps, 'b1');
+    const forScene = ps.filter((p) => p.sceneId === 'late-night');
+    const got = linesForBeat(ps, 'late-night', 'b1');
 
-    // 每份演绎都该贡献恰好一列，且取到的都是同一拍
-    expect(got).toHaveLength(ps.length);
+    // 这一场的每份演绎都该贡献恰好一列，且取到的都是同一拍
+    expect(got).toHaveLength(forScene.length);
     for (const { line } of got) expect(line.beatId).toBe('b1');
 
     // 断言集合而非顺序：加新方言不该让测试红，顺序是加载实现细节
@@ -180,9 +181,25 @@ describe('linesForBeat', () => {
     expect(dialects).toContain('jilu');
   });
 
+  // 回归测试：三个场景都用 b1..b6 做拍号，只按 beatId 匹配会把「上门要债」
+  // 的台词混进「深夜回家」的对比页——签名里的 sceneId 就是为了堵这个。
+  it('不同场景的同名拍号绝不能互相串台', () => {
+    const ps = loadPerformances(DATA_DIR);
+    const got = linesForBeat(ps, 'late-night', 'b1');
+    for (const { performance } of got) expect(performance.sceneId).toBe('late-night');
+
+    const other = linesForBeat(ps, 'debt', 'b1');
+    for (const { performance } of other) expect(performance.sceneId).toBe('debt');
+
+    // 两边都不为空，否则这条测试等于什么都没验
+    expect(got.length).toBeGreaterThan(0);
+    expect(other.length).toBeGreaterThan(0);
+  });
+
   it('某份演绎缺该拍时只跳过它，不影响其余列', () => {
     const ps = loadPerformances(DATA_DIR);
-    const got = linesForBeat([...ps, { ...ps[0], id: 'x', lines: [] }], 'b1');
-    expect(got).toHaveLength(ps.length);
+    const forScene = ps.filter((p) => p.sceneId === 'late-night');
+    const got = linesForBeat([...ps, { ...forScene[0], id: 'x', lines: [] }], 'late-night', 'b1');
+    expect(got).toHaveLength(forScene.length);
   });
 });

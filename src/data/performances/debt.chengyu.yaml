@@ -1,0 +1,35 @@
+id: debt.chengyu
+sceneId: debt
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 哥，那个钱……两年咯，你啥子时候还嘛？我不是催你，我这边也等到用。
+    textMandarin: 哥，那笔钱……两年了，你什么时候还？我不是催你，我这边也等着用。
+    note: 啥子时候＝什么时候，等到用＝等着用。句末「嘛」把话说软，还没撕破脸。
+    audio: /audio/debt.chengyu/b1.mp3
+  - beatId: b2
+    textDialect: 哎呀妹儿，你看我这阵子手头紧得很，等我缓过这口气肯定还你，跑不脱。
+    textMandarin: 哎呀妹妹，你看我这阵子手头很紧，等我缓过这口气肯定还你，跑不掉。
+    note: 紧得很＝很紧（川渝把程度补语放句末），跑不脱＝跑不掉。
+    audio: /audio/debt.chengyu/b2.mp3
+  - beatId: b3
+    textDialect: 缓？两年前你也是这个话！当初借的时候拍起胸口说三个月，三个月！你当我脑壳有包啊？
+    textMandarin: 缓？两年前你也是这句话！当初借的时候拍着胸口说三个月，三个月！你当我脑子有病啊？
+    note: 拍起＝拍着，「脑壳有包」＝脑子有毛病，是川渝极高频的一句损人话。
+    audio: /audio/debt.chengyu/b3.mp3
+  - beatId: b4
+    textDialect: 你至于不嘛？多大点事儿，都是自家人，为倒两个钱在这儿吵，你也不嫌丢人。
+    textMandarin: 你至于吗？多大点事，都是自家人，为了两个钱在这儿吵，你也不嫌丢人。
+    note: 为倒＝为了（倒是川渝的持续体标记，相当于「着」）。
+    audio: /audio/debt.chengyu/b4.mp3
+  - beatId: b5
+    textDialect: 两个钱？八万块！龟儿欠钱还欠出理来了？要得，明天我就把借条贴到你单元门上，看哪个丢人！
+    textMandarin: 两个钱？八万块！你这王八蛋欠钱还欠出理来了？行，明天我就把借条贴到你单元门上，看谁丢人！
+    note: 要得＝行，哪个＝谁。「龟儿」在这一拍是真骂，不是语气词。
+    audio: /audio/debt.chengyu/b5.mp3
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 门关上。谁也没赢。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

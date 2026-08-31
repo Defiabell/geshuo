@@ -1,0 +1,130 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="脏话也是方言 — 各说各话"
+  description="脏话是方言里最不容易被普通话洗掉的部分。这个项目为什么记录它，以及一场关于要不要保留的公开投票。"
+>
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <h1>脏话也是方言</h1>
+    <p class="lede">这一页是这个项目的立场，以及一场公开投票。</p>
+  </header>
+
+  <article class="body">
+    <p>
+      先把话说在前头：<strong>脏话是方言文化的一部分，不是必须被抛弃的糟粕。</strong>
+    </p>
+
+    <h2>它恰恰是最「方言」的那部分</h2>
+    <p>
+      普通话推行几十年，把大量方言词洗成了共同语。今天很多年轻人已经不说
+      「多咱」「晌午头」「后晌」了——但一着急上火，冲口而出的那句还是老家的。
+      <strong>骂人话是方言里最后失守的阵地</strong>：它太生活、太情绪、太不上台面，
+      所以躲过了教科书、躲过了播音腔，反而把最土的那层语音和构词保存了下来。
+    </p>
+    <p>
+      语言学里管这类词叫<strong>詈语</strong>，是方言调查的正经条目，不是谁在耍流氓。
+      一句「滚犊子」和一句「扑你个街」，差的不只是词，是两套完全不同的发狠方式——
+      而这正是这个站想让你听见的东西。
+    </p>
+
+    <h2>把脏话删掉，剩下的不是方言</h2>
+    <p>
+      如果一出家庭吵架戏里，所有人都好好说话、字正腔圆、不带一个脏字，那不是方言，
+      是普通话换了个腔调在演戏。真实的吵架不长那样。一个消过毒的方言库，
+      查资料的人用不上，本地人一听就笑了。
+    </p>
+
+    <h2>你可以不喜欢，但不要贬低</h2>
+    <p>
+      有人听着不舒服，这完全正当——不爱听就不听，这个站不会追着你放。
+      但「不喜欢」和「这是低俗糟粕、应该消灭」是两回事。
+      <strong>个人有个人的爱好，你可以不喜欢，但不要贬低。</strong>
+      一个地方的人怎么骂人，跟他们怎么做饭、怎么哄孩子一样，是那个地方的一部分。
+    </p>
+
+    <h2>记录粗口，不记录仇恨</h2>
+    <p>
+      这条边界是清楚的，也不是道德姿态：<strong>骂人的粗口收，针对族群、性别、地域、
+      残障的仇恨话不收。</strong>后者不是哪个地方的方言特色——它在哪种语言里都一样，
+      也不需要这个站来替它保存。
+    </p>
+
+    <h2 id="vote">那么，你怎么看</h2>
+    <p class="q">这个站里的方言吵架戏，脏话该怎么办？</p>
+
+    <div class="poll" id="poll" data-state="loading">
+      <button class="opt" data-choice="keep_raw">
+        <span class="label">原样保留</span>
+        <span class="hint">该说啥说啥，真实优先</span>
+        <span class="bar"><i></i></span><span class="pct">—</span>
+      </button>
+      <button class="opt" data-choice="keep_marked">
+        <span class="label">保留，但默认收起</span>
+        <span class="hint">想听的人自己点开</span>
+        <span class="bar"><i></i></span><span class="pct">—</span>
+      </button>
+      <button class="opt" data-choice="drop">
+        <span class="label">不要，做干净版</span>
+        <span class="hint">只留不带脏字的说法</span>
+        <span class="bar"><i></i></span><span class="pct">—</span>
+      </button>
+      <p class="tally" id="tally">正在读票…</p>
+    </div>
+
+    <p class="fine">
+      投票不需要登录，同一个网络地址只算一票，改主意可以再点一次覆盖。
+      我们不存你的 IP，只存它的哈希摘要。
+    </p>
+  </article>
+</Base>
+
+<script>
+  import { initPoll } from '../scripts/poll';
+  const el = document.getElementById('poll');
+  if (el) initPoll(el);
+</script>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; letter-spacing: .04em; }
+  .lede { margin: 0 0 8px; color: var(--dust); font-size: 15px; }
+
+  .body { max-width: 36em; font-size: 16.5px; color: var(--ink-2); }
+  .body h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 24px; color: var(--cut); margin: 40px 0 12px; }
+  .body p { margin: 0 0 16px; }
+  .body strong { color: var(--cut-lit); }
+  .q { font-size: 17px; color: var(--body-fg); }
+
+  .poll { display: flex; flex-direction: column; gap: 2px; margin: 18px 0 14px; }
+  .opt {
+    position: relative; text-align: left; cursor: pointer;
+    background: var(--night-2); border: 1px solid var(--rule);
+    padding: 14px 68px 14px 18px; font: inherit; color: var(--body-fg);
+    display: flex; flex-direction: column; gap: 3px;
+    transition: border-color .2s, transform .15s;
+  }
+  .opt:hover { border-color: var(--cut); transform: translateY(-1px); }
+  .opt:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .opt[aria-pressed="true"] { border-color: var(--cut); }
+  .opt[aria-pressed="true"] .label::after { content: " ✓"; color: var(--cut); }
+  .label { font-size: 16px; }
+  .hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .bar { position: absolute; inset: auto 0 0 0; height: 3px; background: transparent; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--cut); transition: width .5s ease; }
+  .pct {
+    position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    font-family: "Noto Sans SC", sans-serif; font-size: 14px; color: var(--dust);
+    font-variant-numeric: tabular-nums;
+  }
+  .poll[data-state="loading"] .pct { opacity: .4; }
+  .tally { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); margin: 10px 0 0; }
+  .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .opt, .bar i { transition: none; }
+  }
+</style>

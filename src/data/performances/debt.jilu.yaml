@@ -1,0 +1,35 @@
+id: debt.jilu
+sceneId: debt
+dialectId: jilu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 哥，那钱……俩年了，恁多咱还啊？俺也不是催恁，可俺这边也等着使。
+    textMandarin: 哥，那钱……两年了，你什么时候还啊？我也不是催你，可我这边也等着用。
+    note: 多咱＝什么时候（冀鲁官话最有辨识度的疑问词之一），使＝用。开口这一拍还留着面子，所以不带脏字。
+    audio: /audio/debt.jilu/b1.mp3
+  - beatId: b2
+    textDialect: 哎呀妹子，恁看俺这阵儿手头紧的，等俺缓过这口气准还恁，跑不了。
+    textMandarin: 哎呀妹妹，你看我这阵子手头紧，等我缓过这口气一定还你，跑不了。
+    note: 准＝一定。「跑不了」是赖账时最常用的一句空话，各地通用。
+    audio: /audio/debt.jilu/b2.mp3
+  - beatId: b3
+    textDialect: 缓？俩年前恁也这么说的！当初借的时候拍着胸脯说仨月，仨月！恁拿俺当傻子涮呢？
+    textMandarin: 缓？两年前你也这么说的！当初借的时候拍着胸脯说三个月，三个月！你拿我当傻子耍呢？
+    note: 涮＝耍弄。翻旧账这一拍开始上火，重复「仨月」是北方吵架里典型的加压方式。
+    audio: /audio/debt.jilu/b3.mp3
+  - beatId: b4
+    textDialect: 恁至于吗？多大点事儿，都是一家人，为俩钱儿在这儿吵吵，恁也不嫌磕碜。
+    textMandarin: 你至于吗？多大点事，都是一家人，为两个钱在这儿嚷嚷，你也不嫌丢人。
+    note: 吵吵＝嚷嚷，磕碜＝丢人。拿亲戚情分压人是这一拍最伤人的地方。
+    audio: /audio/debt.jilu/b4.mp3
+  - beatId: b5
+    textDialect: 俩钱儿？八万块！恁个熊玩意儿欠钱还欠出理来了？行，明儿俺就把借条贴恁单元门上，看谁磕碜！
+    textMandarin: 两个钱？八万块！你这混账欠钱还欠出理来了？行，明天我就把借条贴你单元门上，看谁丢人！
+    note: 明儿＝明天。把对方的话原样甩回去（「磕碜」）是吵架里最常见的反击结构。
+    audio: /audio/debt.jilu/b5.mp3
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 门关上。谁也没赢。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

@@ -1,0 +1,35 @@
+id: leak.dongbei
+sceneId: leak
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 开门！你家又漏水了！我家棚顶淌得跟下雨似的，你个瘪犊子装死呢？
+    textMandarin: 开门！你家又漏水了！我家天花板淌得跟下雨一样，你这混蛋装死呢？
+    note: 棚顶＝天花板。「瘪犊子」是东北话最有代表性的一个骂词，比「熊玩意儿」重，比「王八犊子」轻。
+    audio: /audio/leak.dongbei/b1.mp3
+  - beatId: b2
+    textDialect: 漏啥水啊？我家好好的，一滴没有。是不是你自己整的赖我身上？
+    textMandarin: 漏什么水啊？我家好好的，一滴没有。是不是你自己弄的赖我身上？
+    note: 整＝弄，是东北话覆盖面最广的一个动词，几乎能替代所有「做/弄/搞」。
+    audio: /audio/leak.dongbei/b2.mp3
+  - beatId: b3
+    textDialect: 上回就这么说的！说修说修，仨月了修个屁！你那嘴是不是拿浆糊粘的？
+    textMandarin: 上次就这么说的！说修说修，三个月了修个屁！你那嘴是不是拿浆糊粘的？
+    note: 东北官话与普通话最接近，这一拍的差异主要在语调和「仨月」这种缩略。
+    audio: /audio/leak.dongbei/b3.mp3
+  - beatId: b4
+    textDialect: 哎呀妈呀你这人咋这么不讲理呢！指定是你自己防水没做好，操，赖我头上了！
+    textMandarin: 哎呀你这人怎么这么不讲理！肯定是你自己防水没做好，赖我头上了！
+    note: 哎呀妈呀＝东北话的万能感叹，指定＝肯定。
+    audio: /audio/leak.dongbei/b4.mp3
+  - beatId: b5
+    textDialect: 行，你厉害。这事我不跟你扯了，物业、法院随便挑，看最后谁埋汰！
+    textMandarin: 行，你厉害。这事我不跟你争了，物业、法院随便挑，看最后谁难看！
+    note: 埋汰＝脏/丢人，这里取「丢人」义。扯＝争辩（也就是「扯犊子」的扯）。
+    audio: /audio/leak.dongbei/b5.mp3
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 门摔上。楼道里只剩回声。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

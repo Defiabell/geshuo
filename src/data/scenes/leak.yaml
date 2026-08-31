@@ -1,0 +1,41 @@
+id: leak
+title: 楼上又漏了
+situation: 天花板洇出一大片水印，第三回了。拎着拖把上楼砸门。
+
+# 邻里吵架是脏话密度最高的场景之一——不是为了脏而脏，是这种场合本来就不客气。
+# 一方憋了三次的火，一方从装糊涂到反咬，两边都上头。
+roles:
+  down:
+    name: 楼下
+    voice: adult_male
+    mood: 用压着火、音量大、语速快、带质问的口气说，像上门讨说法
+  up:
+    name: 楼上
+    voice: adult_female
+    mood: 用先装糊涂、被戳穿后尖着嗓子反咬的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 楼下砸门，上来就骂
+    speakerRole: down
+  - id: b2
+    order: 2
+    intent: 楼上装不知道，说自家好好的
+    speakerRole: up
+  - id: b3
+    order: 3
+    intent: 楼下翻旧账——上回就说要修
+    speakerRole: down
+  - id: b4
+    order: 4
+    intent: 楼上反咬，说是楼下自己防水没做好
+    speakerRole: up
+  - id: b5
+    order: 5
+    intent: 楼下撕破脸，放狠话
+    speakerRole: down
+  - id: b6
+    order: 6
+    intent: 门摔上，楼道里只剩回声
+    speakerRole: none

@@ -109,12 +109,21 @@ export function validateContent(
   }
 }
 
+/**
+ * 取出同一场戏里同一拍的各方言说法，用于横向对比。
+ *
+ * 必须带 sceneId：拍号只在场景内唯一，三个场景都用 b1..b6，只按 beatId 匹配
+ * 会把「上门要债」的台词混进「深夜回家」的对比页。调用方即使已经自己过滤过
+ * 场景，这里也再滤一次——签名上就堵死这个误用，比依赖每个调用方记得过滤可靠。
+ */
 export function linesForBeat(
   performances: Performance[],
+  sceneId: string,
   beatId: string,
 ): Array<{ performance: Performance; line: PerformanceLine }> {
   const out: Array<{ performance: Performance; line: PerformanceLine }> = [];
   for (const p of performances) {
+    if (p.sceneId !== sceneId) continue;
     const line = p.lines.find((l) => l.beatId === beatId);
     if (line) out.push({ performance: p, line });
   }

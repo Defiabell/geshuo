@@ -15,7 +15,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "deploy": "astro build && pnpm dlx wrangler@4 pages deploy dist --project-name=geshuo",
+    "deploy": "astro build && pnpm dlx wrangler@4 pages deploy",
     "astro": "astro",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@cloudflare/workers-types": "^5.20260830.1",
     "@types/node": "^24.13.3",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",

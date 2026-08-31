@@ -1,0 +1,18 @@
+# Cloudflare Pages 配置。站点本身是纯静态的（Astro 构建到 dist/），
+# 这里的绑定只服务 functions/ 下的两个接口：
+#   /api/upload —— 网页录音投稿，落到 R2
+#   /api/vote   —— 脏话方言存废投票，落到 D1
+#
+# 部署仍是 wrangler 直传（音频不在仓库里，见 README 的「部署」一节）。
+name = "geshuo"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "dist"
+
+[[r2_buckets]]
+binding = "RECORDINGS"
+bucket_name = "geshuo-recordings"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "geshuo"
+database_id = "60caaec7-24e2-4d8b-ba5d-3224c7766ed6"

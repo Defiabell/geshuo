@@ -1,0 +1,35 @@
+id: debt.dongbei
+sceneId: debt
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 哥，那钱……俩年了，你啥时候还啊？我不是催你，我这边也等着用。
+    textMandarin: 哥，那钱……两年了，你什么时候还啊？我不是催你，我这边也等着用。
+    note: 东北官话与普通话最接近，这一拍几乎重合——差异要到后面上火了才显出来。
+    audio: /audio/debt.dongbei/b1.mp3
+  - beatId: b2
+    textDialect: 哎呀妹子，你看我这阵儿手头紧的，等我缓过这口气准还你，跑不了。
+    textMandarin: 哎呀妹妹，你看我这阵子手头紧，等我缓过这口气一定还你，跑不了。
+    note: 句末「紧的」不接宾语，是东北话把形容词摊开说的习惯。
+    audio: /audio/debt.dongbei/b2.mp3
+  - beatId: b3
+    textDialect: 缓？俩年前你也这么说的！当初借的时候拍胸脯说仨月，仨月！你拿我当傻子涮呢？
+    textMandarin: 缓？两年前你也这么说的！当初借的时候拍胸脯说三个月，三个月！你拿我当傻子耍呢？
+    note: 涮＝耍弄。句末「呢」是东北官话质问句的常见收尾。
+    audio: /audio/debt.dongbei/b3.mp3
+  - beatId: b4
+    textDialect: 你至于不？多大点事儿，都是一家人，为俩钱儿在这扯犊子，你也不嫌寒碜。
+    textMandarin: 你至于吗？多大点事，都是一家人，为两个钱在这儿废话，你也不嫌丢人。
+    note: 扯犊子＝废话/胡扯，寒碜＝丢人。这两个词几乎是东北话的身份证。
+    audio: /audio/debt.dongbei/b4.mp3
+  - beatId: b5
+    textDialect: 俩钱儿？八万！你个王八犊子欠钱还欠出理来了？行，明儿我就把借条贴你单元门上，看谁寒碜！
+    textMandarin: 两个钱？八万！你这王八蛋欠钱还欠出理来了？行，明天我就把借条贴你单元门上，看谁丢人！
+    note: 「王八犊子」比「瘪犊子」重一档，撕破脸才会用。
+    audio: /audio/debt.dongbei/b5.mp3
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 门关上。谁也没赢。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

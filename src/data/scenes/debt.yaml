@@ -1,0 +1,41 @@
+id: debt
+title: 上门要债
+situation: 借出去两年了，一个字不提。今天堵在他家门口。
+
+# 家庭矛盾里最伤人的一种：钱和亲戚绑在一起，撕破脸的成本高，所以憋到最后
+# 才炸——一炸就往死里说。
+roles:
+  lender:
+    name: 我
+    voice: adult_female
+    mood: 用从客气到忍不住、越说越冲的口气说
+  kin:
+    name: 表哥
+    voice: adult_male
+    mood: 用打太极、赖账、被逼急了反过来道德绑架的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 上门直接开口要钱
+    speakerRole: lender
+  - id: b2
+    order: 2
+    intent: 表哥打太极，说最近手头紧
+    speakerRole: kin
+  - id: b3
+    order: 3
+    intent: 翻旧账——当初借的时候怎么说的
+    speakerRole: lender
+  - id: b4
+    order: 4
+    intent: 表哥反咬，拿亲戚情分压人
+    speakerRole: kin
+  - id: b5
+    order: 5
+    intent: 彻底撕破脸
+    speakerRole: lender
+  - id: b6
+    order: 6
+    intent: 门关上，谁也没赢
+    speakerRole: none
