@@ -1,0 +1,35 @@
+id: late-night.chengyu
+sceneId: late-night
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 都几点了才晓得回来？你还晓得屋头门朝哪边开不？
+    textMandarin: 都几点了才知道回来？你还知道家里门朝哪边开吗？
+    note: 晓得＝知道，屋头＝家里。句末用「不」提问，是西南官话的常见问法。
+    audio: /audio/late-night.chengyu/b1.mp3
+  - beatId: b2
+    textDialect: 哎呀加班嘛，跟你说了好多回了。
+    textMandarin: 哎呀加班嘛，跟你说过好多次了。
+    note: 好多＝很多。这一拍故意平淡，敷衍本身不带情绪。
+    audio: /audio/late-night.chengyu/b2.mp3
+  - beatId: b3
+    textDialect: 加班？上回你也说加班，我一问你同事，人家早都走了！
+    textMandarin: 加班？上次你也说加班，我一问你同事，人家早就走了！
+    note: 早都＝早就。翻旧账的结构各地通用，差异在语气词。
+    audio: /audio/late-night.chengyu/b3.mp3
+  - beatId: b4
+    textDialect: 你还查我的岗啊？
+    textMandarin: 你还查我的岗啊？
+    note: 短句是顶嘴的形态特征——越短越冲，这一拍与普通话几乎重合。
+    audio: /audio/late-night.chengyu/b4.mp3
+  - beatId: b5
+    textDialect: 要得，你以后莫回来了，我看你硬是能干！
+    textMandarin: 行，你以后别回来了，我看你真有本事！
+    note: 要得＝行，莫＝别，硬是＝真是（川渝高频强调副词）。整句是反话。
+    audio: /audio/late-night.chengyu/b5.mp3
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 没人说话。门关上的声音。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

@@ -1,0 +1,56 @@
+---
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import { loadDialects } from '../lib/dialect-tree';
+import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+
+// 顶层 frontmatter 作用域（review.astro 不是动态路由，没有 getStaticPaths），
+// 可以直接用 process.cwd() 声明常量——理由同 index.astro 与
+// [scene]/[dialect].astro 里的注释：new URL(..., import.meta.url) 在
+// astro build 时会指向 rolldown 打包产物自身的位置，路径深度算不对，
+// 只有 process.cwd() 在 dev 和 build 下都稳定指向项目根目录。
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const dialects = loadDialects(DATA_DIR);
+const scenes = loadScenes(DATA_DIR);
+const performances = loadPerformances(DATA_DIR);
+validateContent(scenes, performances, dialects);
+
+const rows = performances.flatMap((p) =>
+  p.lines.map((line) => ({
+    performanceId: p.id,
+    dialect: dialects.get(p.dialectId)!.name,
+    scene: scenes.get(p.sceneId)!.title,
+    line,
+  })),
+);
+const missing = rows.filter((r) => !r.line.audio).length;
+---
+<Base title="审核台 — 各说各话" noindex>
+  <h1>审核台</h1>
+  <p class="meta">{rows.length} 条台词 · {missing} 条缺音频</p>
+  <table>
+    <thead><tr><th>方言</th><th>台词</th><th>音频</th></tr></thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr>
+          <td class="dl">{r.dialect}<br /><span>{r.scene}</span></td>
+          <td class="tx">{r.line.textDialect}<br /><span>{r.line.textMandarin}</span></td>
+          <td>{r.line.audio ? <audio controls preload="none" src={r.line.audio}></audio> : <span class="none">待生成</span>}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</Base>
+
+<style>
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; color: var(--cut); font-size: 40px; margin: 56px 0 4px; }
+  .meta { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); margin: 0 0 26px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .1em; color: var(--dust); border-bottom: 1px solid var(--rule); padding: 8px 10px; font-weight: 500; }
+  td { border-bottom: 1px solid var(--rule); padding: 14px 10px; vertical-align: top; }
+  .dl { white-space: nowrap; color: var(--ink-2); }
+  .dl span, .tx span { font-size: 12px; color: var(--dust); }
+  .tx { color: var(--cut); font-size: 17px; }
+  .none { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
+  audio { height: 32px; }
+</style>

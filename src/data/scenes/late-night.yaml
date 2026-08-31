@@ -1,0 +1,28 @@
+id: late-night
+title: 深夜回家
+situation: 快十二点了才进家门，客厅灯还亮着，妈妈坐在沙发上没睡。
+beats:
+  - id: b1
+    order: 1
+    intent: 妈妈质问几点了
+    speakerRole: mom
+  - id: b2
+    order: 2
+    intent: 孩子敷衍说加班
+    speakerRole: kid
+  - id: b3
+    order: 3
+    intent: 妈妈翻旧账戳穿
+    speakerRole: mom
+  - id: b4
+    order: 4
+    intent: 孩子顶嘴
+    speakerRole: kid
+  - id: b5
+    order: 5
+    intent: 妈妈放狠话
+    speakerRole: mom
+  - id: b6
+    order: 6
+    intent: 沉默，门关上
+    speakerRole: none

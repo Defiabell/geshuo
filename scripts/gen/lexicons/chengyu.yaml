@@ -1,0 +1,22 @@
+dialectId: chengyu
+pronouns: []   # 没找到把握大、且书面上与普通话有区分度的代词，宁可留空
+particles:
+  - 噻    # 句末语气词，如「要得噻」「遭了噻」
+verbs:
+  - dialect: 晓得
+    mandarin: 知道
+  - dialect: 啥子
+    mandarin: 什么
+  - dialect: 要得
+    mandarin: 好的／行
+  - dialect: 莫得
+    mandarin: 没有
+  - dialect: 巴适
+    mandarin: 舒服／爽
+curses:
+  - 你娃儿硬是可以哦
+  - 你个瓜娃子
+forbidden:
+  - 恁       # 冀鲁官话
+  - 侬       # 吴语
+  - 咩       # 粤语

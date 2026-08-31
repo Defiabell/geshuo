@@ -1,0 +1,36 @@
+{
+  "name": "geshuo",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "同一出戏，各地各演一遍 —— 方言场景剧场",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Defiabell/geshuo.git"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "astro check",
+    "gen:script": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-script.ts",
+    "gen:audio": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-audio.ts"
+  },
+  "dependencies": {
+    "astro": "7.2.2",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.13.3",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.0"
+  }
+}

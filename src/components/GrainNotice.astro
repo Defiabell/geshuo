@@ -1,0 +1,36 @@
+---
+import { levelLabel } from '../lib/dialect-tree';
+import type { Dialect, PerformanceSource } from '../lib/types';
+interface Props { dialect: Dialect; source: PerformanceSource }
+const { dialect, source } = Astro.props;
+// validateContent() 已硬性拦截 TTS 挂在 point/subcluster 级方言（见 src/lib/content.ts），
+// 所以能通过校验的 TTS 演绎，level 必然不是 'point'——后半个条件恒为真，去掉。
+const isCoarse = source === 'tts';
+---
+{isCoarse && (
+  <div class="grain">
+    <p>
+      <strong>这是{levelLabel(dialect.level)}级的合成语音，不代表任何具体县市。</strong>
+      模型给不出县域口音，只能给一个笼统的腔调。
+    </p>
+    <a class="cta" href="/contribute/">你是本地人？录一个真的</a>
+  </div>
+)}
+
+<style>
+  .grain {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--night-2); border: 1px solid var(--rule); border-left: 3px solid var(--cut);
+    padding: 14px 18px; margin: 18px 0 30px; border-radius: 2px;
+  }
+  .grain p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .grain strong { color: var(--cut-lit); font-weight: 600; }
+  .cta {
+    font-family: "Noto Sans SC", sans-serif; font-size: 13px; white-space: nowrap;
+    align-self: center; text-decoration: none;
+    border: 1px solid var(--cut); color: var(--cut-lit); padding: 8px 14px; border-radius: 2px;
+    transition: background .2s, color .2s;
+  }
+  .cta:hover { background: var(--cut); color: #FFF6E8; }
+  .cta:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+</style>

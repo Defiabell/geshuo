@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="来纠正 — 各说各话">
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <h1>这不是你的话吧</h1>
+  </header>
+  <div class="body">
+    <p>
+      站上现在所有台词都是 AI 生成的，挂在<strong>区级</strong>方言上——
+      模型给不出县域口音，「冀鲁官话」不等于德州话，「粤语」不等于台山话。
+    </p>
+    <p>
+      所以你听着别扭是对的。两种纠正方式，随手一种都行：
+    </p>
+    <ul>
+      <li><strong>改一句</strong>：在台词旁点「这句不对」，告诉我们你们那儿怎么说。</li>
+      <li><strong>录一段</strong>：按同一副骨架念一遍，你的录音会挂到具体的县市，取代那条 AI 版。</li>
+    </ul>
+    <p class="soon">上传通道正在建。在那之前，去 <a href="https://github.com/Defiabell/geshuo/issues">GitHub issues</a> 开一条，说清你是哪儿人、哪一拍不对、你们那儿怎么说。</p>
+  </div>
+</Base>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 24px; }
+  .body { max-width: 36em; font-size: 16px; color: var(--ink-2); }
+  .body strong { color: var(--cut-lit); }
+  .body ul { padding-left: 1.2em; }
+  .body li { margin-bottom: 10px; }
+  .soon { border-left: 3px solid var(--cut); padding-left: 16px; color: var(--dust); font-size: 14.5px; }
+  .soon a { color: var(--cut-lit); }
+</style>

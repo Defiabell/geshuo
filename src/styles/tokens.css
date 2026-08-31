@@ -1,0 +1,59 @@
+:root {
+  --night: #F7EFDD;
+  --night-2: #FFFAF0;
+  --paper: #FFFDF6;
+  --cut: #B7241F;
+  --cut-lit: #D33B27;
+  --ink: #2A1E14;
+  --ink-2: #6B5540;
+  --dust: #9A8461;
+  --rule: #E0CFA8;
+  --frame: #6B4A2E;
+  --glow: transparent;
+  --body-fg: var(--ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --night: #16110D;
+    --night-2: #201811;
+    --paper: #EFDDB0;
+    --cut: #A81E1A;
+    --cut-lit: #E0512F;
+    --ink: #2A1E14;
+    --ink-2: #C9B48A;
+    --dust: #8A7454;
+    --rule: #33261A;
+    --frame: #3A2717;
+    --glow: rgba(239, 221, 176, .2);
+    --body-fg: var(--ink-2);
+  }
+}
+
+:root[data-theme="dark"] {
+  --night: #16110D;
+  --night-2: #201811;
+  --paper: #EFDDB0;
+  --cut: #A81E1A;
+  --cut-lit: #E0512F;
+  --ink: #2A1E14;
+  --ink-2: #C9B48A;
+  --dust: #8A7454;
+  --rule: #33261A;
+  --frame: #3A2717;
+  --glow: rgba(239, 221, 176, .2);
+  --body-fg: var(--ink-2);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 20px 96px;
+  background: var(--night);
+  color: var(--body-fg);
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  line-height: 1.75;
+}
+
+.wrap { max-width: 940px; margin: 0 auto; }

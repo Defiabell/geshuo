@@ -1,0 +1,73 @@
+---
+import type { Beat, PerformanceLine, Verification } from '../lib/types';
+import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
+interface Props { beat: Beat; line: PerformanceLine; verification: Verification }
+const { beat, line, verification } = Astro.props;
+const order = String(beat.order).padStart(2, '0');
+---
+<div class="line" data-beat={beat.id} data-who={beat.speakerRole} data-audio={line.audio ?? ''}>
+  <div>
+    <div class="beat">{order}<br />{beat.intent}</div>
+    {line.audio ? (
+      <button class="play" aria-label={`播放第 ${order} 拍`}>
+        <svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z" /></svg>
+      </button>
+    ) : (
+      <button class="play" disabled aria-label="音频待生成" title="音频待生成">
+        <svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z" /></svg>
+      </button>
+    )}
+  </div>
+  <div>
+    <p class="said">{line.textDialect}</p>
+    <p class="trans">{line.textMandarin}</p>
+    {line.note && <p class="gloss">{line.note}</p>}
+    <div class="row-foot">
+      <span class={`tag ${VERIFICATION_TAG_CLASS[verification]}`}>{VERIFICATION_LABELS[verification]}</span>
+      <button class="wrong" type="button" disabled title="纠错功能是 Phase 2，先记着这句不对">这句不对</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .line {
+    display: grid; grid-template-columns: 96px 1fr; gap: 20px;
+    padding: 22px 20px; border-bottom: 1px solid var(--rule);
+    transition: background .35s ease;
+  }
+  .line.active { background: var(--night-2); }
+  .beat {
+    font-family: "Noto Sans SC", sans-serif; font-size: 11px; letter-spacing: .14em;
+    color: var(--dust); padding-top: 8px; line-height: 1.6;
+  }
+  .line.active .beat { color: var(--cut-lit); }
+  .play {
+    width: 36px; height: 36px; border-radius: 50%; margin-top: 6px;
+    border: 1px solid var(--cut); background: none; color: var(--cut);
+    cursor: pointer; display: grid; place-items: center;
+    transition: background .2s, color .2s, transform .2s;
+  }
+  .play:hover:not(:disabled) { background: var(--cut); color: #FFF6E8; }
+  .play:disabled { opacity: .3; cursor: not-allowed; }
+  .play:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .line.active .play { background: var(--cut); color: #FFF6E8; transform: scale(1.06); }
+  .play svg { width: 13px; height: 13px; fill: currentColor; }
+  .said {
+    font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(22px, 3.4vw, 30px);
+    line-height: 1.5; color: var(--cut); margin: 0 0 8px; text-wrap: balance; letter-spacing: .02em;
+  }
+  .trans { margin: 0 0 10px; font-size: 15px; color: var(--ink-2); }
+  .gloss { margin: 0; font-size: 13.5px; color: var(--dust); border-left: 2px solid var(--rule); padding-left: 12px; }
+  .row-foot { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .08em; padding: 4px 9px; border-radius: 2px; }
+  .tag.unver { background: rgba(183,36,31,.12); color: var(--cut-lit); border: 1px solid rgba(183,36,31,.35); }
+  .tag.verified { background: rgba(154,132,97,.16); color: var(--dust); border: 1px solid rgba(154,132,97,.45); }
+  .tag.human { background: rgba(78,122,62,.14); color: #4E7A3E; border: 1px solid rgba(78,122,62,.4); }
+  .wrong {
+    font-family: "Noto Sans SC", sans-serif; font-size: 13px; background: none; border: none;
+    cursor: pointer; color: var(--dust); border-bottom: 1px dashed var(--dust); padding: 0 0 2px;
+  }
+  .wrong:hover:not(:disabled) { color: var(--cut-lit); border-bottom-color: var(--cut-lit); }
+  .wrong:disabled { opacity: .3; cursor: not-allowed; }
+  .wrong:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+</style>

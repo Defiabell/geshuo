@@ -1,0 +1,147 @@
+---
+import { join } from 'node:path';
+import Base from '../../../../layouts/Base.astro';
+import { loadDialects, levelLabel } from '../../../../lib/dialect-tree';
+import { loadScenes, loadPerformances, linesForBeat } from '../../../../lib/content';
+import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../../../../lib/verification';
+
+export async function getStaticPaths() {
+  // getStaticPaths() runs in its own isolated scope at build time — only
+  // imports are shared from the frontmatter, not locally computed consts —
+  // so DATA_DIR must be computed here rather than at the top of the module.
+  //
+  // A relative `new URL('../../../../data/', import.meta.url)` breaks under
+  // `astro build`: rolldown emits this function into a chunk under
+  // dist/.prerender/chunks/, and import.meta.url there resolves to that
+  // chunk's own location, not this source file's — so the relative offset
+  // lands at the wrong depth against the *build output*, not src/. Anchoring
+  // on process.cwd() (the project root pnpm/astro is invoked from, in both
+  // dev and build) is stable across both.
+  const DATA_DIR = join(process.cwd(), 'src', 'data');
+  const scenes = loadScenes(DATA_DIR);
+  const performances = loadPerformances(DATA_DIR);
+  const dialects = loadDialects(DATA_DIR);
+  const paths = [];
+
+  for (const scene of scenes.values()) {
+    const forScene = performances.filter((p) => p.sceneId === scene.id);
+    // 没有任何演绎的场景没有可对比的内容——跳过，否则会生成空页面
+    // 且 columns[0]?.dialect.id ?? '' 会拼出 /s/xxx// 这样的畸形死链。
+    if (forScene.length === 0) continue;
+    for (const beat of scene.beats) {
+      paths.push({
+        params: { scene: scene.id, beat: beat.id },
+        props: {
+          scene,
+          beat,
+          columns: linesForBeat(forScene, beat.id).map(({ performance, line }) => ({
+            dialect: dialects.get(performance.dialectId)!,
+            performance,
+            line,
+          })),
+        },
+      });
+    }
+  }
+  return paths;
+}
+
+const { scene, beat, columns } = Astro.props;
+const sorted = scene.beats.slice().sort((a, b) => a.order - b.order);
+
+// 对比页可能同时展示多个不同层级、不同来源（TTS / 真人）的方言列——粒度声明
+// 不能只挂在场景页（GrainNotice 只在 [dialect].astro 里出现）。对比页本身是
+// 可以直接分享、直接落地的 URL，spec 要求"页面上标注"而不是"某个页面上标注"。
+const ttsColumns = columns.filter((c) => c.performance.source === 'tts');
+const hasTts = ttsColumns.length > 0;
+const allTts = hasTts && ttsColumns.length === columns.length;
+// 层级名从实际在场的 TTS 列推导，不写死"区/片"——粤语挂在大区级，
+// 硬编码会当场说错话。
+const ttsLevels = [...new Set(ttsColumns.map((c) => levelLabel(c.dialect.level)))];
+const levelPhrase = ttsLevels.join('/') + '层级';
+const grainHeadline = allTts
+  ? `以下均为 AI 合成语音，标注的是方言${levelPhrase}，不代表任何具体县市。`
+  : `除真人录音列外，以下 AI 合成语音标注的是方言${levelPhrase}，不代表任何具体县市。`;
+---
+<Base title={`${scene.title} · 第 ${beat.order} 拍横着听 — 各说各话`}>
+  <header class="top">
+    <a class="home" href={`/s/${scene.id}/${columns[0]?.dialect.id ?? ''}/`}>← 回到场景</a>
+    <h1>{beat.intent}</h1>
+    <p class="situation">{scene.title} · 第 {beat.order} 拍 —— 同一拍，各地并排。</p>
+  </header>
+
+  <nav class="beats">
+    {sorted.map((b) => (
+      <a href={`/s/${scene.id}/compare/${b.id}/`} aria-current={b.id === beat.id ? 'page' : undefined}>
+        {String(b.order).padStart(2, '0')}
+      </a>
+    ))}
+  </nav>
+
+  {hasTts && (
+    <div class="grain">
+      <p>
+        <strong>{grainHeadline}</strong>
+        模型给不出县域口音，只能给一个笼统的腔调。
+      </p>
+      <a class="cta" href="/contribute/">你是本地人？录一个真的</a>
+    </div>
+  )}
+
+  <div class="compare">
+    {columns.map(({ dialect, performance, line }) => (
+      <div class="col">
+        <h2>{dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span></h2>
+        <p class="said">{line.textDialect}</p>
+        <p class="trans">{line.textMandarin}</p>
+        {line.note && <p class="gloss">{line.note}</p>}
+        <span class={`tag ${VERIFICATION_TAG_CLASS[performance.verification]}`}>
+          {VERIFICATION_LABELS[performance.verification]}
+        </span>
+      </div>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(30px, 5vw, 46px); color: var(--cut); margin: 14px 0 8px; }
+  .situation { margin: 0 0 26px; font-size: 15px; color: var(--ink-2); }
+  .beats { display: flex; gap: 6px; margin-bottom: 22px; }
+  .beats a {
+    font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .1em;
+    padding: 6px 12px; border: 1px solid var(--rule); color: var(--dust);
+    text-decoration: none; border-radius: 2px;
+  }
+  .beats a:hover { border-color: var(--cut); color: var(--cut-lit); }
+  .beats a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .beats a[aria-current="page"] { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
+  .grain {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--night-2); border: 1px solid var(--rule); border-left: 3px solid var(--cut);
+    padding: 14px 18px; margin: 0 0 24px; border-radius: 2px;
+  }
+  .grain p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .grain strong { color: var(--cut-lit); font-weight: 600; }
+  .cta {
+    font-family: "Noto Sans SC", sans-serif; font-size: 13px; white-space: nowrap;
+    align-self: center; text-decoration: none;
+    border: 1px solid var(--cut); color: var(--cut-lit); padding: 8px 14px; border-radius: 2px;
+    transition: background .2s, color .2s;
+  }
+  .cta:hover { background: var(--cut); color: #FFF6E8; }
+  .cta:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px; }
+  .col { background: var(--night-2); border: 1px solid var(--rule); padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 0; letter-spacing: .1em; color: var(--ink-2); font-weight: 500; }
+  .lv2 { font-size: 11px; color: var(--dust); letter-spacing: .1em; }
+  .said { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(19px, 2.6vw, 23px); color: var(--cut); margin: 4px 0 2px; line-height: 1.5; }
+  .trans { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+  .gloss { font-size: 13px; color: var(--dust); margin: 0; border-left: 2px solid var(--rule); padding-left: 10px; }
+  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .08em; padding: 4px 9px; border-radius: 2px; align-self: flex-start; }
+  .tag.unver { background: rgba(183,36,31,.12); color: var(--cut-lit); border: 1px solid rgba(183,36,31,.35); }
+  .tag.verified { background: rgba(154,132,97,.16); color: var(--dust); border: 1px solid rgba(154,132,97,.45); }
+  .tag.human { background: rgba(78,122,62,.14); color: #4E7A3E; border: 1px solid rgba(78,122,62,.4); }
+</style>

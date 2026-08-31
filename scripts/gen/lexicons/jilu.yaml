@@ -1,0 +1,23 @@
+dialectId: jilu
+pronouns:
+  - 恁      # 你 / 你们
+  - 俺      # 我 / 我们
+particles:
+  - 哩
+  - 来着
+verbs:
+  - dialect: 家来
+    mandarin: 回家
+  - dialect: 拉呱
+    mandarin: 聊天
+  - dialect: 多咱
+    mandarin: 什么时候
+  - dialect: 夜来
+    mandarin: 昨天
+curses:
+  - 我看你能耐
+  - 你还知道家门朝哪开
+forbidden:
+  - 侬       # 吴语
+  - 晓得     # 西南官话
+  - 咩       # 粤语

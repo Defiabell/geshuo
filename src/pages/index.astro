@@ -1,0 +1,87 @@
+---
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import PaperWindow from '../components/PaperWindow.astro';
+import { loadDialects } from '../lib/dialect-tree';
+import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+
+// 首页不走 getStaticPaths，属于顶层 frontmatter 作用域，可以直接用
+// process.cwd() 声明常量——理由同 [scene]/compare/[beat].astro 里的注释：
+// 相对 new URL(...) + import.meta.url 的写法在 astro build 时会指向
+// rolldown 打包产物自身的位置，路径深度算不对。
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const dialects = loadDialects(DATA_DIR);
+const scenes = loadScenes(DATA_DIR);
+const performances = loadPerformances(DATA_DIR);
+validateContent(scenes, performances, dialects);
+
+const cards = Array.from(scenes.values())
+  .map((scene) => {
+    const forScene = performances.filter((p) => p.sceneId === scene.id);
+    return {
+      scene,
+      count: forScene.length,
+      first: forScene[0]?.dialectId,
+      names: forScene.map((p) => dialects.get(p.dialectId)!.name),
+    };
+  })
+  // 没有任何演绎的场景没有可点进去的目的地——first 会是 undefined，
+  // 卡片链接会拼出 /s/{id}/undefined/ 死链。同款 guard 见
+  // s/[scene]/compare/[beat].astro 的 getStaticPaths()。
+  .filter((c) => c.count > 0);
+---
+<Base title="各说各话">
+  <header class="top">
+    <div class="eyebrow">方言场景剧场</div>
+    <h1>各说各话</h1>
+    <p class="tagline">
+      同一出戏，各地各演一遍。骨架统一，措辞自便——所以你能把「妈妈爆发」这一拍，
+      在德州、青岛、广州之间横着听过去。
+    </p>
+  </header>
+
+  <PaperWindow />
+
+  <section>
+    <h2>挑一出戏</h2>
+    <div class="grid">
+      {cards.map(({ scene, count, first, names }) => (
+        <a class="card" href={`/s/${scene.id}/${first}/`}>
+          <h3>{scene.title}</h3>
+          <p class="sit">{scene.situation}</p>
+          <p class="meta">{count} 种说法 · {names.join(' / ')}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      台词由 AI 生成，未经母语者校对。这不是偷懒，是默认状态：
+      先给一个粗糙的版本，再等老乡来纠正。<a href="/contribute/">来纠正 →</a>
+    </p>
+  </footer>
+</Base>
+
+<style>
+  .top { padding: 64px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+  .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(44px, 8vw, 76px); line-height: 1; color: var(--cut); letter-spacing: .04em; margin: 0; }
+  .tagline { font-size: 17px; color: var(--ink-2); max-width: 34em; margin: 0; }
+  section { padding-top: 64px; }
+  h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px; }
+  .card {
+    background: var(--night-2); border: 1px solid var(--rule); padding: 24px 22px;
+    text-decoration: none; display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: var(--cut); transform: translateY(-2px); }
+  .card:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .card h3 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 24px; color: var(--cut); margin: 0; }
+  .sit { font-size: 14.5px; color: var(--ink-2); margin: 0; }
+  .meta { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); margin: 0; letter-spacing: .06em; }
+  footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--rule); }
+  footer p { font-size: 13.5px; color: var(--dust); margin: 0; }
+  footer a { color: var(--cut-lit); text-decoration: none; }
+</style>

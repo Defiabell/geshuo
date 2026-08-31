@@ -1,0 +1,34 @@
+---
+import { levelLabel } from '../lib/dialect-tree';
+import type { Dialect, Performance } from '../lib/types';
+interface Props { dialects: Dialect[]; performances: Performance[]; sceneId: string; currentId: string }
+const { dialects, performances, sceneId, currentId } = Astro.props;
+const sourceOf = (id: string) => performances.find((p) => p.dialectId === id)?.source;
+---
+<div class="dialects" role="group" aria-label="选择方言">
+  {dialects.map((d) => {
+    const src = sourceOf(d.id);
+    const tail = src === 'human' ? '真人录音' : src === 'tts' ? 'AI 合成' : '待录';
+    return (
+      <a class="chip" href={`/s/${sceneId}/${d.id}/`} aria-current={d.id === currentId ? 'page' : undefined}>
+        {d.name}<span class="lv">{levelLabel(d.level)} · {tail}</span>
+      </a>
+    );
+  })}
+</div>
+
+<style>
+  .dialects { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+  .chip {
+    font-family: "Noto Sans SC", sans-serif; font-size: 14px; text-decoration: none;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--ink-2);
+    padding: 9px 15px 10px; border-radius: 2px;
+    display: flex; align-items: baseline; gap: 9px;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .chip:hover { border-color: var(--cut); color: var(--cut-lit); }
+  .chip:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .chip .lv { font-size: 11px; letter-spacing: .12em; color: var(--dust); border-left: 1px solid var(--rule); padding-left: 9px; }
+  .chip[aria-current="page"] { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
+  .chip[aria-current="page"] .lv { color: rgba(255,246,232,.75); border-left-color: rgba(255,246,232,.35); }
+</style>
