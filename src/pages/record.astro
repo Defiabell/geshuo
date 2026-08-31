@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
 import { loadDialects } from '../lib/dialect-tree';
 import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { NO_SPEAKER } from '../lib/types';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
 const dialects = loadDialects(DATA_DIR);
@@ -14,10 +15,15 @@ validateContent(scenes, performances, dialects);
 // 方言版本念。念别人的版本会把那个方言的措辞带进来，就不是他自己的话了。
 const list = Array.from(scenes.values()).map((scene) => ({
   scene,
-  beats: scene.beats.map((b) => {
-    const ref = performances.find((p) => p.sceneId === scene.id)?.lines.find((l) => l.beatId === b.id);
-    return { beat: b, role: scene.roles[b.speakerRole], mandarin: ref?.textMandarin ?? '' };
-  }),
+  // 空拍（speakerRole: none）不列出来——那一拍没人说话，给个录音按钮
+  // 等于请人录一段空气，而且下面 mandarin 显示的是「门关上的声音」这种
+  // 舞台提示，照着念就更荒唐了。
+  beats: scene.beats
+    .filter((b) => b.speakerRole !== NO_SPEAKER)
+    .map((b) => {
+      const ref = performances.find((p) => p.sceneId === scene.id)?.lines.find((l) => l.beatId === b.id);
+      return { beat: b, role: scene.roles[b.speakerRole], mandarin: ref?.textMandarin ?? '' };
+    }),
 }));
 ---
 <Base title="录一个真的 — 各说各话" description="用你自己的方言录一遍，直接在网页上传，不用走 GitHub。">
