@@ -2,6 +2,8 @@
 
 > 同一出戏，各地各演一遍。
 
+**线上：https://geshuo.pages.dev**
+
 一个方言场景剧场：把「深夜回家被妈妈盘问」这样的日常场景写成一副**只描述情节、不含台词**的骨架，让各地方言各自填肉，然后逐拍对齐——于是你可以横着听过去，看同一句质问在德州、广州、成都、沈阳分别是怎么说出口的。
 
 ```
@@ -94,7 +96,7 @@ pnpm gen:audio -- late-night.chengyu
 
 ## 技术栈
 
-Astro 7 静态站，无数据库——方言树、场景、演绎全部是构建时读取的 YAML。部署在 Cloudflare Pages。语音一次性生成后静态托管，页面播放不调任何 API。
+Astro 7 静态站，无数据库——方言树、场景、演绎全部是构建时读取的 YAML。语音一次性生成后静态托管，页面播放不调任何 API。
 
 ```
 src/data/          方言树、场景骨架、各地演绎（YAML）
@@ -104,6 +106,18 @@ scripts/gen/       台词生成（词表约束）、语音合成
 ```
 
 `src/lib/content.ts` 的 `validateContent()` 是这个项目的安全带：漏一拍、多一拍、挂错方言层级、可信度写错枚举——全部在构建期炸掉，不给坏数据静静上线的机会。
+
+## 部署
+
+站点在 Cloudflare Pages，走 **wrangler 直传**，不是 git 集成：
+
+```bash
+pnpm deploy    # astro build && wrangler pages deploy dist
+```
+
+之所以不接 git 自动部署：**音频不在仓库里**。CF 从 GitHub 拉代码构建，产出的会是一个哑巴站——而语音恰恰是这个项目的全部意义。所以部署必须从一台本地有 `public/audio/` 的机器发起。
+
+这意味着**合进 main 不等于上线**。改了台词也要有人重新跑一次 `pnpm deploy`。
 
 ## 许可
 

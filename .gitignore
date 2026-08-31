@@ -29,3 +29,6 @@ public/audio/
 
 # 本机特定的 registry 配置（网络环境相关，不该强加给别人）
 .npmrc
+
+# wrangler 本地状态
+.wrangler/
