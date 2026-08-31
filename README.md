@@ -4,7 +4,7 @@
 
 **线上：https://geshuo.pages.dev**
 
-<img src="screenshots/hero.png" width="800" alt="各说各话首页：剪纸风格的场景插画"/>
+<img src="screenshots/hero.png" width="800" alt="各说各话首页：站名、一句话说明，和「深夜回家」这一出戏的入口，标着 4 种说法——成渝片 / 东北官话 / 冀鲁官话 / 粤语"/>
 
 <img src="screenshots/scene.png" width="800" alt="逐拍对齐的方言台词，每句带普通话对照、词条注释、语音播放，以及「AI 生成 · 未经母语者校对」的诚实标记"/>
 

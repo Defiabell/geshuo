@@ -65,7 +65,8 @@ const cards = Array.from(scenes.values())
   .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); }
   h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(44px, 8vw, 76px); line-height: 1; color: var(--cut); letter-spacing: .04em; margin: 0; }
   .tagline { font-size: 17px; color: var(--ink-2); max-width: 34em; margin: 0; }
-  section { padding-top: 64px; }
+  /* 剪纸窗撤掉后这里原本的 64px 会留出一个明显的空洞——上面没东西了，不需要那么大的隔断 */
+  section { padding-top: 32px; }
   h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px; }
   .card {
