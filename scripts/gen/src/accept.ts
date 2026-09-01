@@ -12,9 +12,17 @@ import type { Dialect, Performance } from '../../../src/lib/types';
  *   pnpm recordings:draft    生成 .inbox/texts.yaml —— 你在里面填「实际说了什么」
  *   pnpm recordings:accept   按那份文件建方言点、落音频、写演绎
  *
- * 为什么必须填 said：站上 textDialect 是主展示行。照搬 AI 写的那句去配真人的
- * 音，字和声对不上，正是这个项目最忌讳的"看着真、其实假"。所以草稿里 said
- * 一律留空，AI 版只作为注释摆在旁边参考，逼你有意识地写一次。
+ * 关于 said：站上 textDialect 是主展示行，所以它必须**经过投稿人本人过目**。
+ * 但不要求逐字转写——很多方言词没有通行写法，只能拿同音字凑，逼人逐字写等于
+ * 把门槛抬回没人进得来。真人演绎一律标 transcript: approximate，页面上明写
+ * 「以音为准，字是大意」。
+ *
+ * 所以 said 有两种填法：
+ *   said: 你实际说的那句话        —— 自己写
+ *   said: 同ai                    —— AI 那句意思一致，本人确认后直接用
+ *
+ * 唯一不许的是**留空放过去**：那等于把 AI 编的字悄悄安到真人录音上，
+ * 读者会以为那就是他说的话。
  */
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -26,10 +34,13 @@ const TEXTS = join(INBOX, 'texts.yaml');
 interface Meta { place?: string; sceneId?: string; beatId?: string; contact?: string; note?: string }
 interface Obj { key: string; custom_metadata?: Meta }
 
+/** said 写成这些词之一，表示「AI 那句就对，直接用」 */
+const SAME_AS_AI = new Set(['同ai', '同AI', '=ai', '=AI', '同上', '一样']);
+
 interface Draft {
   dialect: Dialect;
   contributor?: string;
-  scenes: Record<string, Record<string, { intent?: string; ai?: string; said: string; note?: string }>>;
+  scenes: Record<string, Record<string, { intent?: string; ai?: string; ai_mandarin?: string; said: string; mandarin?: string; note?: string }>>;
 }
 
 const shortId = (key: string) => {
@@ -43,15 +54,15 @@ function manifest(): Obj[] {
   return JSON.parse(readFileSync(p, 'utf8')) as Obj[];
 }
 
-function aiTextFor(sceneId: string, beatId: string): string {
+function aiLineFor(sceneId: string, beatId: string): { dialect: string; mandarin: string } | null {
   const dir = join(DATA_DIR, 'performances');
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.yaml'))) {
     const p = parse(readFileSync(join(dir, f), 'utf8')) as Performance;
     if (p.sceneId !== sceneId || p.source !== 'tts' || p.dialectId !== 'jilu') continue;
     const l = p.lines.find((x) => x.beatId === beatId);
-    if (l) return l.textDialect;
+    if (l) return { dialect: l.textDialect, mandarin: l.textMandarin };
   }
-  return '';
+  return null;
 }
 
 function draft() {
@@ -71,8 +82,12 @@ function draft() {
     '# 把投稿录音接进站点。填好每条 said: 之后跑 pnpm recordings:accept',
     '#',
     `# 投稿地点：${place || '（没填）'}`,
-    '# said 必须是"录音里实际说出口的话"。ai 那行只是参考，照抄它等于让字和声对不上。',
-    '# 某一句实在听不清，把整条删掉即可——宁可少一句，不要写一句假的。',
+    '# 不要求逐字转写——很多方言词没有通行写法。页面上会明写「以音为准，字是大意」。',
+    '# 两种填法：',
+    "#   said: 你实际说的那句话     —— 自己写",
+    "#   said: 同ai                 —— AI 那句意思一致，你确认后直接用它的字",
+    '# 唯一不行的是留空：那等于把 AI 编的字悄悄安到你的录音上。',
+    '# 某一句实在不想留，把整条删掉即可。',
     '',
     'dialect:',
     '  id: wucheng',
@@ -99,11 +114,15 @@ function draft() {
     lines.push(`  ${sceneId}:`);
     for (const b of speaking) {
       if (!beats.includes(b.id)) continue;
-      const ai = aiTextFor(sceneId, b.id);
+      const ai = aiLineFor(sceneId, b.id);
       lines.push(`    ${b.id}:`);
       lines.push(`      intent: ${JSON.stringify(b.intent)}`);
-      if (ai) lines.push(`      ai: ${JSON.stringify(ai)}`);
+      if (ai) {
+        lines.push(`      ai: ${JSON.stringify(ai.dialect)}`);
+        lines.push(`      ai_mandarin: ${JSON.stringify(ai.mandarin)}`);
+      }
       lines.push(`      said: ''`);
+      lines.push(`      mandarin: ''   # 普通话大意；写「同ai」或留空则沿用上面那行`);
       lines.push(`      note: ''`);
     }
     lines.push('');
@@ -162,6 +181,9 @@ function accept() {
       dialectId: d.dialect.id,
       source: 'human',
       verification: 'human_recorded',
+      // 真人录音的字一律标"大意"：方言词常常没有定字，逐字转写做不到，
+      // 页面上会明写"以音为准"。要逐字的那天再手工改成 verbatim。
+      transcript: 'approximate',
       ...(d.contributor ? { contributor: d.contributor } : {}),
       lines: scene.beats.map((b) => {
         if (b.speakerRole === 'none') {
@@ -169,6 +191,20 @@ function accept() {
           return { beatId: b.id, textDialect: '——', textMandarin: '（沉默）' };
         }
         const v = beats[b.id];
+        // 「同ai」＝本人确认 AI 那句跟自己说的意思一致，直接采用它的字。
+        // 这是一次有意识的确认，跟"留空被默默填上"完全不是一回事。
+        const said = SAME_AS_AI.has(v.said.trim()) ? (v.ai ?? '').trim() : v.said.trim();
+        if (!said) throw new Error(`${perfId} 的 ${b.id}：said 写了「同ai」但草稿里没有 ai 那行`);
+        // 普通话对照：自己写的优先，否则用 AI 那行的翻译。
+        // **绝不回落到 beat.intent**——intent 是舞台提示（"上门直接开口要钱"），
+        // 不是这句话的普通话翻译，摆在"普通话对照"的位置上是答非所问。
+        const rawM = (v.mandarin ?? '').trim();
+        const mandarin = rawM && !SAME_AS_AI.has(rawM) ? rawM : (v.ai_mandarin ?? '').trim();
+        if (!mandarin) {
+          throw new Error(
+            `${perfId} 的 ${b.id}：没有普通话对照——自己填 mandarin，或让草稿带上 ai_mandarin`,
+          );
+        }
         const clip = clipOf(sceneId, b.id);
         const sid = clip ? shortId(clip.key) : '';
         const src = join(MP3, `${sid}.mp3`);
@@ -178,8 +214,8 @@ function accept() {
         const ms = measureDurationMs(dest);
         return {
           beatId: b.id,
-          textDialect: v.said.trim(),
-          textMandarin: v.note?.trim() || b.intent,
+          textDialect: said,
+          textMandarin: mandarin,
           ...(v.note?.trim() ? { note: v.note.trim() } : {}),
           audio: `/audio/${perfId}/${b.id}.mp3`,
           ...(ms !== undefined ? { durationMs: ms } : {}),

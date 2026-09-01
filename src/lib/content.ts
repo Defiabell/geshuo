@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { NO_SPEAKER, PERFORMANCE_SOURCES, VERIFICATIONS, VOICE_PROFILES } from './types';
+import { NO_SPEAKER, PERFORMANCE_SOURCES, TRANSCRIPTS, VERIFICATIONS, VOICE_PROFILES } from './types';
 import type { Dialect, DialectLevel, Performance, PerformanceLine, Scene } from './types';
 
 /** TTS 到不了县级颗粒——point（点）与 subcluster（小片）都在县域颗粒上，禁止挂 TTS 演绎 */
@@ -100,6 +100,15 @@ export function validateContent(
       throw new Error(
         `演绎 ${p.id} 的 source 非法：${p.source}——` +
           `必须是 ${PERFORMANCE_SOURCES.join(' / ')} 之一，否则粒度声明条会静默消失`,
+      );
+    }
+
+    // transcript 拼错会让「文字是大意不是逐字」这句提示整条消失——
+    // 跟 verification/source 一样，是个能被静默关掉的诚实标注
+    if (p.transcript !== undefined && !TRANSCRIPTS.includes(p.transcript)) {
+      throw new Error(
+        `演绎 ${p.id} 的 transcript 非法：${p.transcript}——` +
+          `必须是 ${TRANSCRIPTS.join(' / ')} 之一，否则「文字为大意」的提示会静默消失`,
       );
     }
 

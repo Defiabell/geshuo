@@ -2,7 +2,6 @@
   name: 官话
   level: supergroup
   parentId: null
-
 - id: jilu
   name: 冀鲁官话
   level: group
@@ -10,7 +9,6 @@
   lng: 116.9
   lat: 37.4
   description: 山东西北部与河北东南部。德州、济南、聊城、滨州、淄博属此。
-
 - id: jiaoliao
   name: 胶辽官话
   level: group
@@ -18,12 +16,10 @@
   lng: 120.4
   lat: 36.1
   description: 胶东半岛与辽东半岛。青岛、烟台、威海属此，与冀鲁官话互通有难度。
-
 - id: xinan
   name: 西南官话
   level: group
   parentId: guanhua
-
 - id: chengyu
   name: 成渝片
   level: cluster
@@ -31,14 +27,12 @@
   lng: 104.1
   lat: 30.6
   description: 四川盆地中东部，成都、重庆一带。
-
 - id: dongbei
   name: 东北官话
   level: group
   parentId: guanhua
   lng: 125.3
   lat: 43.9
-
 - id: yue
   name: 粤语
   level: supergroup
@@ -46,7 +40,6 @@
   lng: 113.3
   lat: 23.1
   description: 汉语十大方言之一，不属官话。
-
 - id: dezhou
   name: 山东德州
   level: point
@@ -54,7 +47,6 @@
   lng: 116.36
   lat: 37.44
   description: 冀鲁官话内的具体方言点。片级归属待考，故直接挂在区级下。
-
 - id: qingdao
   name: 山东青岛
   level: point
@@ -62,3 +54,10 @@
   lng: 120.38
   lat: 36.07
   description: 胶辽官话内的具体方言点。片级归属待考，故直接挂在区级下。
+- id: wucheng
+  name: 山东武城
+  level: point
+  parentId: jilu
+  lng: 116.07
+  lat: 37.21
+  description: 冀鲁官话内的具体方言点，德州市武城县。

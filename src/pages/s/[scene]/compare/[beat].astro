@@ -84,6 +84,15 @@ const grainHeadline = allTts
     ))}
   </nav>
 
+  {columns.some((c) => c.performance.source === 'human' && c.performance.transcript === 'approximate') && (
+    <div class="grain loose">
+      <p>
+        <strong>真人录音那几列以音为准：字是大意，不是逐字转写。</strong>
+        很多方言词没有通行写法，只能拿同音字凑。
+      </p>
+    </div>
+  )}
+
   {hasTts && (
     <div class="grain">
       <p>
@@ -148,6 +157,8 @@ const grainHeadline = allTts
     padding: 14px 18px; margin: 0 0 24px; border-radius: 2px;
   }
   .grain p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .grain.loose { border-left-color: var(--dust); }
+  .grain.loose strong { color: var(--dust); }
   .grain strong { color: var(--cut-lit); font-weight: 600; }
   .cta {
     font-family: "Noto Sans SC", sans-serif; font-size: 13px; white-space: nowrap;

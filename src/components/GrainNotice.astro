@@ -1,11 +1,14 @@
 ---
 import { levelLabel } from '../lib/dialect-tree';
-import type { Dialect, PerformanceSource } from '../lib/types';
-interface Props { dialect: Dialect; source: PerformanceSource }
-const { dialect, source } = Astro.props;
+import type { Dialect, PerformanceSource, Transcript } from '../lib/types';
+interface Props { dialect: Dialect; source: PerformanceSource; transcript?: Transcript }
+const { dialect, source, transcript } = Astro.props;
 // validateContent() 已硬性拦截 TTS 挂在 point/subcluster 级方言（见 src/lib/content.ts），
 // 所以能通过校验的 TTS 演绎，level 必然不是 'point'——后半个条件恒为真，去掉。
 const isCoarse = source === 'tts';
+// 真人录音但文字只是大意：读的人有权知道自己读的不是逐字转写。
+// 这跟 TTS 那条声明是同一个道理——不是放宽标准，是把标准说出来。
+const loose = source === 'human' && transcript === 'approximate';
 ---
 {isCoarse && (
   <div class="grain">
@@ -16,6 +19,14 @@ const isCoarse = source === 'tts';
     <a class="cta" href="/record/">你是本地人？录一个真的</a>
   </div>
 )}
+{loose && (
+  <div class="grain loose">
+    <p>
+      <strong>以音为准：下面的字是大意，不是逐字转写。</strong>
+      很多方言词没有通行的写法，只能拿同音字凑——听到的才是真的，字只是帮你对上意思。
+    </p>
+  </div>
+)}
 
 <style>
   .grain {
@@ -24,6 +35,8 @@ const isCoarse = source === 'tts';
     padding: 14px 18px; margin: 18px 0 30px; border-radius: 2px;
   }
   .grain p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .grain.loose { border-left-color: var(--dust); }
+  .grain.loose strong { color: var(--dust); }
   .grain strong { color: var(--cut-lit); font-weight: 600; }
   .cta {
     font-family: "Noto Sans SC", sans-serif; font-size: 13px; white-space: nowrap;

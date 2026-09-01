@@ -1,0 +1,13 @@
+id: w-guannipishi.wucheng
+sceneId: w-guannipishi
+dialectId: wucheng
+source: human
+verification: human_recorded
+transcript: approximate
+contributor: 武城老乡
+lines:
+  - beatId: b1
+    textDialect: 碍着恁么事了？
+    textMandarin: 碍着你什么事了？
+    audio: /audio/w-guannipishi.wucheng/b1.mp3
+    durationMs: 1980

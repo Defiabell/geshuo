@@ -86,6 +86,24 @@ export type Verification = (typeof VERIFICATIONS)[number];
 export const PERFORMANCE_SOURCES = ['tts', 'human'] as const;
 export type PerformanceSource = (typeof PERFORMANCE_SOURCES)[number];
 
+/**
+ * 文字跟录音的对应程度。这是**独立于可信度三档的另一根轴**：
+ * verification 说的是「这段音靠不靠谱」，transcript 说的是「这些字是不是他
+ * 逐字说的」。
+ *
+ * 为什么需要它：很多方言词没有定字（「多咱」「磕碜」算运气好的，更多只能拿
+ * 同音字凑，或者压根写不出来）。逼投稿人逐字转写等于把门槛抬回没人进得来。
+ * 语保工程、乡音苑同样是「音为主、字为辅」。
+ *
+ * 但读的人有权知道自己在读什么——所以不是放宽标准，是**把标准说出来**：
+ * - `verbatim`：逐字转写，字就是他说的
+ * - `approximate`：大意相符，用字不一定准
+ *
+ * 缺省不填时按 verbatim 处理（AI 演绎的字和音本来就是同一份文本生成的）。
+ */
+export const TRANSCRIPTS = ['verbatim', 'approximate'] as const;
+export type Transcript = (typeof TRANSCRIPTS)[number];
+
 export interface PerformanceLine {
   beatId: string;
   textDialect: string;
@@ -109,6 +127,8 @@ export interface Performance {
   dialectId: string;
   source: PerformanceSource;
   verification: Verification;
+  /** 文字与录音的对应程度；不填等于 verbatim。真人录音一般是 approximate */
+  transcript?: Transcript;
   contributor?: string;
   verifier?: string;
   lines: PerformanceLine[];

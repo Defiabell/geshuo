@@ -1,0 +1,13 @@
+id: w-shoushenme.wucheng
+sceneId: w-shoushenme
+dialectId: wucheng
+source: human
+verification: human_recorded
+transcript: approximate
+contributor: 武城老乡
+lines:
+  - beatId: b1
+    textDialect: 你瞅么？没见过啊？
+    textMandarin: 你看什么？没见过啊？
+    audio: /audio/w-shoushenme.wucheng/b1.mp3
+    durationMs: 2820

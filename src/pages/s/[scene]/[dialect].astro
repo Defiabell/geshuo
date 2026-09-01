@@ -55,7 +55,7 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
     sceneId={scene.id}
     currentId={dialect.id}
   />
-  <GrainNotice dialect={dialect} source={performance.source} />
+  <GrainNotice dialect={dialect} source={performance.source} transcript={performance.transcript} />
 
   <div class="bar">
     <button class="btn-play" id="playAll">▶ 从头演一遍</button>
