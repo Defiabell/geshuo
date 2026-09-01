@@ -1,0 +1,12 @@
+id: w-guannipishi.yue
+sceneId: w-guannipishi
+dialectId: yue
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 关你叉事啊？
+    textMandarin: 关你什么事啊？
+    note: 「叉」是粤语里代替更粗那个字的写法，日常使用频率极高，语气比「咩事」重。
+    audio: /audio/w-guannipishi.yue/b1.mp3
+    durationMs: 1440

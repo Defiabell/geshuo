@@ -59,6 +59,17 @@ export interface Scene {
   id: string;
   title: string;
   situation: string;
+  /**
+   * 「一句话挑战」标记，值是这一期的日期（YYYY-MM-DD）。
+   *
+   * 一句话挑战本质上就是「只有一拍的场景」——所以不另起一套数据结构，
+   * 复用场景的全部机制（校验、TTS 生成、横向对比、录音投稿）。有这个字段
+   * 的场景恰好只能有一个说话拍，validateContent() 会强制。
+   *
+   * 存在的理由是投稿门槛：六拍要录五条，一句话只要录一条十五秒。深度内容
+   * 靠戏，入口靠一句话。
+   */
+  weekly?: string;
   /** 本场景的角色表，键就是 beats 里 speakerRole 的合法取值 */
   roles: Record<string, SceneRole>;
   beats: Beat[];
@@ -82,6 +93,14 @@ export interface PerformanceLine {
   note?: string;
   /** public/ 下的音频路径；未生成时为空 */
   audio?: string;
+  /**
+   * 音频时长（毫秒），由 ffprobe 在生成时量出来写回。
+   *
+   * 存在的理由：连听按钮要告诉人「点下去要花多久」。按字数估算会离谱——
+   * 一句「你瞅啥？」两秒八，一句邻里对骂六秒半，差三倍。没有 ffprobe 的
+   * 机器上这个字段会缺，界面据此不显示秒数，而不是显示一个编的数字。
+   */
+  durationMs?: number;
 }
 
 export interface Performance {

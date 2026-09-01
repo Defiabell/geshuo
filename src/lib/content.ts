@@ -54,6 +54,21 @@ export function validateContent(
         );
       }
     }
+    // 一句话挑战必须恰好一个说话拍。多于一拍就不是「一句话」了，投稿门槛
+    // 立刻回到六拍那个量级，而降低门槛正是它存在的唯一理由。
+    if (scene.weekly !== undefined) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(scene.weekly)) {
+        throw new Error(`场景 ${scene.id} 的 weekly 必须是 YYYY-MM-DD：${scene.weekly}`);
+      }
+      const speaking = scene.beats.filter((b) => b.speakerRole !== NO_SPEAKER);
+      if (speaking.length !== 1) {
+        throw new Error(
+          `一句话挑战 ${scene.id} 有 ${speaking.length} 个说话拍——必须恰好 1 个，` +
+            '多了就不是「一句话」，投稿门槛会退回六拍那个量级',
+        );
+      }
+    }
+
     for (const beat of scene.beats) {
       const known = beat.speakerRole === NO_SPEAKER || beat.speakerRole in (scene.roles ?? {});
       if (!known) {

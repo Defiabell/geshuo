@@ -1,0 +1,16 @@
+id: w-guannipishi
+title: 关你屁事
+situation: 有人对你的私事指指点点，还越说越起劲。
+weekly: '2026-08-25'
+
+roles:
+  she:
+    name: 顶回去
+    voice: adult_female
+    mood: 用冷笑一声、不耐烦、一句话把人顶回去的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 一句话把多管闲事的人顶回去
+    speakerRole: she

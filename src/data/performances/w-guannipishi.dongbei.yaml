@@ -1,0 +1,12 @@
+id: w-guannipishi.dongbei
+sceneId: w-guannipishi
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 关你屁事儿？
+    textMandarin: 关你什么事？
+    note: 「屁事儿」的儿化是东北话的标配，去掉儿化味道就淡一半。
+    audio: /audio/w-guannipishi.dongbei/b1.mp3
+    durationMs: 1344

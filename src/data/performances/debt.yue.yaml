@@ -9,26 +9,31 @@ lines:
     textMandarin: 哥，那笔钱……两年了，你什么时候还啊？我不是逼你，不过我这边也要用。
     note: 嗰＝那，几时＝什么时候，唔係＝不是，呢边＝这边。开口还留着面子。
     audio: /audio/debt.yue/b1.mp3
+    durationMs: 7920
   - beatId: b2
     textDialect: 哎呀妹，你睇我呢排手紧到咁，等我唞过啖气实还你，走唔甩嘅。
     textMandarin: 哎呀妹妹，你看我最近手头这么紧，等我喘过这口气一定还你，跑不掉的。
     note: 睇＝看，呢排＝最近，唞＝喘/歇，啖＝口（量词），实＝一定，走唔甩＝跑不掉。
     audio: /audio/debt.yue/b2.mp3
+    durationMs: 6960
   - beatId: b3
     textDialect: 唞？两年前你都係噉讲！当初借嗰阵拍晒心口话三个月，三个月啊！你当我记性差係咪？
     textMandarin: 喘？两年前你也是这么说！当初借的时候拍着胸口说三个月，三个月啊！你当我记性差是不是？
     note: 噉讲＝这么说，嗰阵＝那时候，拍晒心口＝拍着胸脯，晒是完成/尽的意思。
     audio: /audio/debt.yue/b3.mp3
+    durationMs: 9600
   - beatId: b4
     textDialect: 使唔使咁啊？咁少少嘢，一家人嚟嘅，为咗两个钱喺度嘈，你都唔怕丑。
     textMandarin: 至于吗？这么点事，都是一家人，为了两个钱在这儿吵，你也不嫌丢人。
     note: 使唔使咁＝至于吗，少少嘢＝一点点事，喺度＝在这儿，嘈＝吵，怕丑＝害臊。
     audio: /audio/debt.yue/b4.mp3
+    durationMs: 6880
   - beatId: b5
     textDialect: 两个钱？八万蚊！你个扑街欠钱仲有埋道理？得，听日我就将张借据贴喺你楼下，睇下边个怕丑！
     textMandarin: 两个钱？八万块！你这扑街欠钱还有理了？行，明天我就把借条贴在你楼下，看谁害臊！
     note: 蚊＝块（钱），仲＝还，有埋＝连…都有，听日＝明天，边个＝谁。
     audio: /audio/debt.yue/b5.mp3
+    durationMs: 9040
   - beatId: b6
     textDialect: ——
     textMandarin: 门关上。谁也没赢。

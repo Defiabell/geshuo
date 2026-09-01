@@ -1,0 +1,12 @@
+id: w-shoushenme.yue
+sceneId: w-shoushenme
+dialectId: yue
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 望咩啊？冇见过啊？
+    textMandarin: 看什么啊？没见过啊？
+    note: 望＝看，咩＝什么，冇＝没有。粤语用「望」不用「看」，一个字就把地域交代了。
+    audio: /audio/w-shoushenme.yue/b1.mp3
+    durationMs: 1600

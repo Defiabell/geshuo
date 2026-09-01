@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import Base from '../../../../layouts/Base.astro';
 import { loadDialects, levelLabel } from '../../../../lib/dialect-tree';
 import { loadScenes, loadPerformances, linesForBeat } from '../../../../lib/content';
+import { chainSeconds } from '../../../../lib/audio';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../../../../lib/verification';
 
 export async function getStaticPaths() {
@@ -59,6 +60,11 @@ const allTts = hasTts && ttsColumns.length === columns.length;
 // 硬编码会当场说错话。
 const ttsLevels = [...new Set(ttsColumns.map((c) => levelLabel(c.dialect.level)))];
 const levelPhrase = ttsLevels.join('/') + '层级';
+// 连听按钮只在真有两列以上带音频时出现——只有一条能放的时候，「连听」
+// 这个词是骗人的。预估时长按每条 4 秒粗算，只为了让人知道点下去要花多久。
+const playableCount = columns.filter((c) => c.line.audio).length;
+// 真实时长，量不到就不显示——不按字数估，那会差三倍
+const totalSeconds = chainSeconds(columns.map((c) => c.line));
 const grainHeadline = allTts
   ? `以下均为 AI 合成语音，标注的是方言${levelPhrase}，不代表任何具体县市。`
   : `除真人录音列外，以下 AI 合成语音标注的是方言${levelPhrase}，不代表任何具体县市。`;
@@ -88,10 +94,22 @@ const grainHeadline = allTts
     </div>
   )}
 
-  <div class="compare">
+  {playableCount > 1 && (
+    <div class="bar">
+      <button class="btn-chain" id="chain" data-idle={`▶ ${playableCount} 地连听`}>▶ {playableCount} 地连听</button>
+      <span class="bar-hint">
+        同一句话，各地连着放完{totalSeconds !== null && `——这一拍 ${totalSeconds} 秒`}
+      </span>
+    </div>
+  )}
+
+  <div class="compare" id="compare">
     {columns.map(({ dialect, performance, line }) => (
-      <div class="col">
-        <h2>{dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span></h2>
+      <div class="col" data-audio={line.audio ?? ''}>
+        <h2>
+          {dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span>
+          {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
+        </h2>
         <p class="said">{line.textDialect}</p>
         <p class="trans">{line.textMandarin}</p>
         {line.note && <p class="gloss">{line.note}</p>}
@@ -102,6 +120,12 @@ const grainHeadline = allTts
     ))}
   </div>
 </Base>
+
+<script>
+  import { initChain } from '../../../../scripts/chain';
+  const el = document.getElementById('compare');
+  if (el) initChain(el.parentElement ?? document.body);
+</script>
 
 <style>
   .top { padding: 56px 0 8px; }
@@ -133,6 +157,27 @@ const grainHeadline = allTts
   }
   .cta:hover { background: var(--cut); color: #FFF6E8; }
   .cta:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .bar { display: flex; gap: 14px; align-items: center; margin: 0 0 18px; flex-wrap: wrap; }
+  .btn-chain {
+    font-family: "Noto Sans SC", sans-serif; font-size: 14px; cursor: pointer;
+    background: var(--cut); color: #FFF6E8; border: none;
+    padding: 12px 24px; border-radius: 2px; transition: background .2s;
+  }
+  .btn-chain:hover { background: var(--cut-lit); }
+  .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .bar-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .one {
+    font-size: 11px; line-height: 1; cursor: pointer; margin-left: 8px;
+    background: transparent; border: 1px solid var(--rule); color: var(--cut);
+    width: 22px; height: 22px; border-radius: 50%; padding: 0;
+    transition: background .18s, color .18s, border-color .18s;
+  }
+  .one:hover { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
+  .one:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  /* 连听时当前列亮起来——不然四条连着放完，听的人不知道刚才那句是哪儿的 */
+  .col.on { border-color: var(--cut); background: var(--paper); }
+  .col.on h2 { color: var(--cut-lit); }
+  @media (prefers-reduced-motion: reduce) { .btn-chain, .one, .col { transition: none; } }
   .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px; }
   .col { background: var(--night-2); border: 1px solid var(--rule); padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
   .col h2 { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 0; letter-spacing: .1em; color: var(--ink-2); font-weight: 500; }

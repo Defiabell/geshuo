@@ -1,0 +1,12 @@
+id: w-guannipishi.jilu
+sceneId: w-guannipishi
+dialectId: jilu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 碍着恁么事了？
+    textMandarin: 碍着你什么事了？
+    note: 恁＝你（冀鲁官话第二人称），么事＝什么事。不用「关」用「碍」，是这一带顶人的常见说法。
+    audio: /audio/w-guannipishi.jilu/b1.mp3
+    durationMs: 2208

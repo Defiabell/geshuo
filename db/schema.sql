@@ -7,3 +7,17 @@ CREATE TABLE IF NOT EXISTS votes (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS votes_one_per_ip ON votes(ip_hash);
+
+-- 盲听猜方言。这张表的真正用途不是排行榜，是**众包质检**：
+-- 如果冀鲁官话那条有 70% 的人猜成东北话，那就是硬证据，说明那条 AI 口音不对。
+-- 不需要专家、不需要问卷，游戏玩下来数据就有了。
+CREATE TABLE IF NOT EXISTS guesses (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  clip       TEXT NOT NULL,          -- 形如 late-night.jilu/b1
+  actual     TEXT NOT NULL,          -- 真实方言 id，服务端从 clip 解析，不信客户端
+  guessed    TEXT NOT NULL,
+  correct    INTEGER NOT NULL,
+  ip_hash    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS guesses_clip ON guesses(clip);

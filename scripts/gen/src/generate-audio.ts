@@ -5,6 +5,7 @@ import { parse, stringify } from 'yaml';
 import { loadScenes } from '../../../src/lib/content';
 import { NO_SPEAKER } from '../../../src/lib/types';
 import { voiceFor, instructionFor, countBilledChars, INSTRUCT_MODEL } from './tts';
+import { measureDurationMs } from './duration';
 import type { Performance } from '../../../src/lib/types';
 import type { VoiceSpec } from './tts';
 
@@ -151,6 +152,9 @@ async function main() {
     const buf = await synth(line.textDialect, instruction, spec);
     writeFileSync(outPath, buf);
     line.audio = `/audio/${performanceId}/${line.beatId}.mp3`;
+    // 量不到就不写这个字段，界面据此不显示秒数——不编数字
+    const ms = measureDurationMs(outPath);
+    if (ms !== undefined) line.durationMs = ms;
     billed += countBilledChars(line.textDialect);
 
     // 每条成功后立刻整份回写 YAML，而不是等循环全部跑完——这样中途失败时，

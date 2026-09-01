@@ -1,0 +1,18 @@
+id: w-shoushenme
+title: 你瞅啥？
+situation: 地铁上，有人一直盯着你看。你回过头去。
+weekly: '2026-09-01'
+
+# 一句话挑战：只有一拍。全国人民都干过这件事，但每个地方的挑衅方式不一样
+# ——用哪个动词（瞅 / 瞟 / 望）、用哪个疑问词，一句话就把地域交代清楚了。
+roles:
+  he:
+    name: 挑衅
+    voice: adult_male
+    mood: 用不客气、下巴微抬、找茬的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 嫌对方一直盯着自己看，回敬一句
+    speakerRole: he

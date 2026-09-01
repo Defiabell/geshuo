@@ -1,0 +1,12 @@
+id: w-shoushenme.chengyu
+sceneId: w-shoushenme
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你瞟啥子哦？没看倒过嗦？
+    textMandarin: 你瞄什么呢？没见过吗？
+    note: 瞟＝斜着眼看，比「看」多一层不怀好意。看倒过＝看到过，嗦＝吗（川渝句末疑问助词）。
+    audio: /audio/w-shoushenme.chengyu/b1.mp3
+    durationMs: 2640

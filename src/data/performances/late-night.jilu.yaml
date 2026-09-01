@@ -9,26 +9,31 @@ lines:
     textMandarin: 这都几点了才回家？你还知道你家门朝哪儿开吗？
     note: 多咱＝什么时候。家来＝回家，把「回家」说成「家来」，动词在后。
     audio: /audio/late-night.jilu/b1.mp3
+    durationMs: 3888
   - beatId: b2
     textDialect: 哎呀加班嘛，跟你说了多少回了。
     textMandarin: 哎呀加班嘛，跟你说过多少次了。
     note: 这一拍故意平淡——敷衍本身不带情绪，方言差异在这里最小。
     audio: /audio/late-night.jilu/b2.mp3
+    durationMs: 3648
   - beatId: b3
     textDialect: 加班？上回你也说加班，我一问你同事，人家早走了！
     textMandarin: 加班？上次你也说加班，我一问你同事，人家早就走了！
     note: 翻旧账是吵架的通用结构，差异集中在称谓和语气词上。
     audio: /audio/late-night.jilu/b3.mp3
+    durationMs: 5256
   - beatId: b4
     textDialect: 你还查我岗啊？
     textMandarin: 你还查我的岗啊？
     note: 短句是顶嘴的形态特征——越短越冲。
     audio: /audio/late-night.jilu/b4.mp3
+    durationMs: 2136
   - beatId: b5
     textDialect: 行，恁以后别家来了，我看你能耐！
     textMandarin: 行，你以后别回家了，我看你有本事！
     note: 恁＝你/你们，冀鲁官话常用第二人称。放狠话永远是反话。
     audio: /audio/late-night.jilu/b5.mp3
+    durationMs: 3576
   - beatId: b6
     textDialect: ——
     textMandarin: 没人说话。门关上的声音。

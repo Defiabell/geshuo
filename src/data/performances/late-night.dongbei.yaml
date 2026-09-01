@@ -9,26 +9,31 @@ lines:
     textMandarin: 这都几点了才知道回来？你还知道咱家门朝哪儿开吗？
     note: 句末「呢」代替普通话的「吗」，是东北官话质问句的常见收尾。
     audio: /audio/late-night.dongbei/b1.mp3
+    durationMs: 3888
   - beatId: b2
     textDialect: 哎呀加班呗，跟你说多少回了。
     textMandarin: 哎呀加班嘛，跟你说过多少次了。
     note: 呗＝嘛（带无所谓的口气），正好贴合敷衍这一拍。
     audio: /audio/late-night.dongbei/b2.mp3
+    durationMs: 3240
   - beatId: b3
     textDialect: 加班？上回你也说加班，我一问你同事，人家早走了！
     textMandarin: 加班？上次你也说加班，我一问你同事，人家早就走了！
     note: 东北官话与普通话最接近，翻旧账这一拍差异主要在语调而非用词。
     audio: /audio/late-night.dongbei/b3.mp3
+    durationMs: 4464
   - beatId: b4
     textDialect: 你还查我岗呢？
     textMandarin: 你还查我的岗啊？
     note: 又是句末「呢」。短句顶嘴，越短越冲。
     audio: /audio/late-night.dongbei/b4.mp3
+    durationMs: 1800
   - beatId: b5
     textDialect: 行，你往后别回来了，我看你能耐的！
     textMandarin: 行，你以后别回家了，我看你有本事！
     note: 往后＝以后，「能耐的」是东北话夸人有本事的反用，此处全是反话。
     audio: /audio/late-night.dongbei/b5.mp3
+    durationMs: 3264
   - beatId: b6
     textDialect: ——
     textMandarin: 没人说话。门关上的声音。

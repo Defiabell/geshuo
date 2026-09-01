@@ -1,0 +1,12 @@
+id: w-shoushenme.jilu
+sceneId: w-shoushenme
+dialectId: jilu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你瞅么？没见过啊？
+    textMandarin: 你看什么？没见过啊？
+    note: 么＝什么（冀鲁官话的标志性疑问词）。瞅在这儿比「看」更冲，带挑事的意思。
+    audio: /audio/w-shoushenme.jilu/b1.mp3
+    durationMs: 3504

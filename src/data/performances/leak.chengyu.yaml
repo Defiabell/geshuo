@@ -9,26 +9,31 @@ lines:
     textMandarin: 开门！你家又漏水了！我家天花板都在滴水，你这王八蛋装死是不是？
     note: 屋头＝家里，老子＝我（川渝男性口语自称，不算特别重）。「龟儿」是川渝使用频率最高的一个骂词，熟人之间甚至能当语气词。
     audio: /audio/leak.chengyu/b1.mp3
+    durationMs: 6560
   - beatId: b2
     textDialect: 漏啥子水哦？我屋头好生生的，一点事都没得。莫不是你自己整的哦？
     textMandarin: 漏什么水啊？我家好好的，一点事都没有。难道是你自己弄的？
     note: 啥子＝什么，好生生＝好好的，没得＝没有，整＝弄。句末「哦」把装糊涂的语气托起来。
     audio: /audio/leak.chengyu/b2.mp3
+    durationMs: 5120
   - beatId: b3
     textDialect: 上回就是这个话！说修说修，三个月了修个锤子！你嘴巴是不是拿浆糊糊起的？
     textMandarin: 上次就是这句话！说修说修，三个月了修个屁！你嘴巴是不是拿浆糊糊的？
     note: 「锤子」＝个屁，是川渝否定一切的万能词，语气比普通话的「个屁」略轻快。
     audio: /audio/leak.chengyu/b3.mp3
+    durationMs: 6800
   - beatId: b4
     textDialect: 哎哟你这个人咋个这么不讲理嘛！怕是你自己防水没做好哦，格老子的赖到我头上！
     textMandarin: 哎哟你这人怎么这么不讲理！恐怕是你自己防水没做好，赖到我头上！
     note: 咋个＝怎么，怕是＝恐怕，格老子的是川渝的发狠语气词，相当于普通话的「他妈的」。
     audio: /audio/leak.chengyu/b4.mp3
+    durationMs: 6240
   - beatId: b5
     textDialect: 要得，你凶。这个事我不跟你扯了，物业、法院随便你挑，看哪个先难看！
     textMandarin: 行，你厉害。这事我不跟你争了，物业、法院随便你挑，看谁先难看！
     note: 要得＝行，凶＝厉害（此处是反话），哪个＝谁。
     audio: /audio/leak.chengyu/b5.mp3
+    durationMs: 6800
   - beatId: b6
     textDialect: ——
     textMandarin: 门摔上。楼道里只剩回声。

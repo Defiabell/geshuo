@@ -1,0 +1,12 @@
+id: w-guannipishi.chengyu
+sceneId: w-guannipishi
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 关你锤子事？
+    textMandarin: 关你什么事？
+    note: 锤子＝屁/个啥，是川渝否定一切的万能词，此处当骂词用。
+    audio: /audio/w-guannipishi.chengyu/b1.mp3
+    durationMs: 1040

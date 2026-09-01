@@ -1,0 +1,211 @@
+---
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import { loadDialects, levelLabel } from '../lib/dialect-tree';
+import { loadScenes, loadPerformances, validateContent, linesForBeat } from '../lib/content';
+import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
+import { chainSeconds } from '../lib/audio';
+
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const dialects = loadDialects(DATA_DIR);
+const scenes = loadScenes(DATA_DIR);
+const performances = loadPerformances(DATA_DIR);
+validateContent(scenes, performances, dialects);
+
+// 按日期倒序，最新一期做主角，其余进往期。日期在构建时定死——这个站是
+// 静态站 + 手动部署，不假装有「实时当周」这回事。
+const weeklies = Array.from(scenes.values())
+  .filter((s) => s.weekly)
+  .sort((a, b) => (a.weekly! < b.weekly! ? 1 : -1));
+
+const current = weeklies[0];
+const past = weeklies.slice(1);
+
+const columnsFor = (sceneId: string, beatId: string) =>
+  linesForBeat(performances, sceneId, beatId).map(({ performance, line }) => ({
+    dialect: dialects.get(performance.dialectId)!,
+    performance,
+    line,
+  }));
+
+const cur = current
+  ? { scene: current, beat: current.beats.find((b) => b.speakerRole !== 'none')!, }
+  : null;
+const curCols = cur ? columnsFor(cur.scene.id, cur.beat.id) : [];
+const playable = curCols.filter((c) => c.line.audio).length;
+const totalSeconds = chainSeconds(curCols.map((c) => c.line));
+---
+<Base
+  title={cur ? `${cur.scene.title} — 一句话挑战 · 各说各话` : '一句话挑战 — 各说各话'}
+  description="每期一句全国人都说过的话，看各地怎么说。录一句就能参与，十五秒。"
+>
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <div class="eyebrow">一句话挑战</div>
+    {cur ? <h1>{cur.scene.title}</h1> : <h1>还没有开始</h1>}
+    {cur && <p class="sit">{cur.scene.situation}</p>}
+  </header>
+
+  {cur && (
+    <>
+      <p class="ask">{cur.beat.intent}——<strong>你们那儿怎么说？</strong></p>
+
+      {playable > 1 && (
+        <div class="bar">
+          <button class="btn-chain" id="chain" data-idle={`▶ ${playable} 地连听`}>▶ {playable} 地连听</button>
+          {totalSeconds !== null && <span class="bar-hint">{totalSeconds} 秒听完全国</span>}
+        </div>
+      )}
+
+      <div class="compare" id="compare">
+        {curCols.map(({ dialect, performance, line }) => (
+          <div class="col" data-audio={line.audio ?? ''}>
+            <h2>
+              {dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span>
+              {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
+            </h2>
+            <p class="said">{line.textDialect}</p>
+            <p class="trans">{line.textMandarin}</p>
+            {line.note && <p class="gloss">{line.note}</p>}
+            <span class={`tag ${VERIFICATION_TAG_CLASS[performance.verification]}`}>
+              {VERIFICATION_LABELS[performance.verification]}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <section class="join">
+        <h2 class="jh">你那儿呢</h2>
+        <p class="jp">
+          上面四条都是 AI 合成的，只到区级。<strong>录一句就完事——十五秒，不用注册。</strong>
+        </p>
+        <label class="f">
+          <span class="k">你是哪儿人 <em>必填</em></span>
+          <input id="place" type="text" placeholder="山东德州 · 陵城区 · 糜镇" autocomplete="off" />
+          <span class="hint">越细越好。乡镇比县好，县比市好。</span>
+        </label>
+        <label class="f">
+          <span class="k">怎么找到你 <em>选填</em></span>
+          <input id="contact" type="text" placeholder="邮箱 / GitHub 用户名" autocomplete="off" />
+        </label>
+
+        <div class="beat" data-scene={cur.scene.id} data-beat={cur.beat.id}>
+          <p class="ref">{cur.beat.intent}</p>
+          <div class="ctl">
+            <button class="rec" type="button">● 开始录</button>
+            <label class="pick">选个文件<input type="file" accept="audio/*" hidden /></label>
+            <audio class="prev" controls hidden></audio>
+            <button class="send" type="button" hidden>上传这一句</button>
+            <span class="status" role="status"></span>
+          </div>
+        </div>
+        <p class="fine">
+          录音只上传、不公开。会有人先听过，确认是本人本地口音，才会挂到你写的那个点上。
+          脏话照录——<a href="/swearing/">为什么 →</a>
+        </p>
+      </section>
+    </>
+  )}
+
+  {past.length > 0 && (
+    <section class="past">
+      <h2 class="jh">往期</h2>
+      <div class="grid">
+        {past.map((s) => {
+          const b = s.beats.find((x) => x.speakerRole !== 'none')!;
+          const cs = columnsFor(s.id, b.id);
+          return (
+            <a class="card" href={`/s/${s.id}/${cs[0]?.dialect.id ?? ''}/`}>
+              <h3>{s.title}</h3>
+              <p class="cm">{s.weekly} · {cs.length} 种说法</p>
+              <p class="cl">{cs.map((c) => c.line.textDialect).join('　/　')}</p>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+</Base>
+
+<script>
+  import { initChain } from '../scripts/chain';
+  import { initRecorder } from '../scripts/recorder';
+  const el = document.getElementById('compare');
+  if (el) initChain(el.parentElement ?? document.body);
+  initRecorder(document);
+</script>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); margin-top: 14px; }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(40px, 8vw, 70px); color: var(--cut); margin: 8px 0 10px; letter-spacing: .04em; }
+  .sit { margin: 0 0 6px; color: var(--ink-2); max-width: 34em; }
+  .ask { margin: 18px 0 20px; font-size: 16px; color: var(--ink-2); }
+  .ask strong { color: var(--cut-lit); }
+
+  .bar { display: flex; gap: 14px; align-items: center; margin: 0 0 16px; flex-wrap: wrap; }
+  .btn-chain {
+    font-family: "Noto Sans SC", sans-serif; font-size: 14px; cursor: pointer;
+    background: var(--cut); color: #FFF6E8; border: none; padding: 12px 24px; border-radius: 2px;
+    transition: background .2s;
+  }
+  .btn-chain:hover { background: var(--cut-lit); }
+  .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .bar-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px; }
+  .col { background: var(--night-2); border: 1px solid var(--rule); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; }
+  .col.on { border-color: var(--cut); background: var(--paper); }
+  .col.on h2 { color: var(--cut-lit); }
+  .col h2 { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 0; letter-spacing: .1em; color: var(--ink-2); font-weight: 500; }
+  .lv2 { font-size: 11px; color: var(--dust); letter-spacing: .1em; }
+  .one {
+    font-size: 11px; line-height: 1; cursor: pointer; margin-left: 8px;
+    background: transparent; border: 1px solid var(--rule); color: var(--cut);
+    width: 22px; height: 22px; border-radius: 50%; padding: 0;
+  }
+  .one:hover { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
+  .said { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(20px, 2.8vw, 26px); color: var(--cut); margin: 2px 0; line-height: 1.5; }
+  .trans { font-size: 14px; color: var(--ink-2); margin: 0; }
+  .gloss { font-size: 12.5px; color: var(--dust); margin: 0; border-left: 2px solid var(--rule); padding-left: 10px; }
+  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11px; padding: 2px 8px; align-self: flex-start; border: 1px solid currentColor; }
+
+  .join { margin-top: 46px; border-top: 1px solid var(--rule); padding-top: 26px; max-width: 36em; }
+  .jh { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 26px; color: var(--cut); margin: 0 0 10px; }
+  .jp { color: var(--ink-2); margin: 0 0 18px; }
+  .jp strong { color: var(--cut-lit); }
+  .f { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .k { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); letter-spacing: .06em; }
+  .k em { font-style: normal; color: var(--cut); font-size: 11.5px; margin-left: 6px; }
+  .f input { font: inherit; font-size: 15px; padding: 11px 14px; background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
+  .f input:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
+  .hint { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
+  .beat { border-top: 1px solid var(--rule); padding-top: 16px; }
+  .ref { margin: 0 0 12px; color: var(--ink-2); font-size: 15px; }
+  .ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ctl button, .pick {
+    font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; cursor: pointer;
+    border: 1px solid var(--cut); background: transparent; color: var(--cut);
+    padding: 8px 16px; border-radius: 2px; transition: background .18s, color .18s;
+  }
+  .ctl button:hover, .pick:hover { background: var(--cut); color: var(--paper); }
+  .ctl button[disabled] { opacity: .45; cursor: default; }
+  .ctl button.on { background: var(--cut); color: var(--paper); }
+  .send { border-style: dashed; }
+  .prev { height: 34px; max-width: 240px; }
+  .status { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .status.ok { color: var(--cut); }
+  .status.bad { color: var(--cut-lit); }
+  .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; margin: 16px 0 0; }
+  .fine a { color: var(--cut-lit); }
+
+  .past { margin-top: 48px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px; }
+  .card { background: var(--night-2); border: 1px solid var(--rule); padding: 20px 18px; text-decoration: none; display: flex; flex-direction: column; gap: 7px; transition: border-color .2s; }
+  .card:hover { border-color: var(--cut); }
+  .card h3 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 22px; color: var(--cut); margin: 0; }
+  .cm { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); margin: 0; }
+  .cl { font-size: 14px; color: var(--ink-2); margin: 0; }
+</style>

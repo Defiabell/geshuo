@@ -19,9 +19,11 @@
     "astro": "astro",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "astro check",
+    "check": "astro check && tsc -p functions --noEmit",
     "gen:script": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-script.ts",
-    "gen:audio": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-audio.ts"
+    "gen:audio": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-audio.ts",
+    "gen:durations": "tsx scripts/gen/src/measure-all.ts",
+    "gen:map": "tsx scripts/gen/src/build-map.ts"
   },
   "dependencies": {
     "astro": "7.2.2",

@@ -1,4 +1,3 @@
-/// <reference types="@cloudflare/workers-types" />
 /**
  * 网页录音投稿：把真人录的方言直接传上来，不用走 GitHub。
  *

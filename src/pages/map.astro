@@ -1,0 +1,189 @@
+---
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import { loadDialects, levelLabel } from '../lib/dialect-tree';
+import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { project } from '../lib/geo';
+import outline from '../data/china-outline.json';
+
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const dialects = loadDialects(DATA_DIR);
+const scenes = loadScenes(DATA_DIR);
+const performances = loadPerformances(DATA_DIR);
+validateContent(scenes, performances, dialects);
+
+// 光晕半径按方言层级给：层级越粗，圈越大越糊。
+// 这不是装饰——它就是「AI 只到区级」这件事的可视化。一个大团块摊在几个省上，
+// 正是模型能给出的全部精度；真人录音才配得上一个点。
+const BLUR_R: Record<string, number> = {
+  supergroup: 6.5,
+  group: 5,
+  cluster: 3.6,
+  subcluster: 2.4,
+  point: 1.2,
+};
+
+const withPerf = Array.from(dialects.values())
+  .map((d) => {
+    const ps = performances.filter((p) => p.dialectId === d.id);
+    return { dialect: d, performances: ps };
+  })
+  .filter((x) => x.performances.length > 0 && x.dialect.lng !== undefined && x.dialect.lat !== undefined)
+  .map((x) => {
+    const [cx, cy] = project(x.dialect.lng!, x.dialect.lat!);
+    const human = x.performances.some((p) => p.source === 'human');
+    return {
+      ...x,
+      cx,
+      cy,
+      human,
+      r: BLUR_R[x.dialect.level] ?? 3,
+      href: `/s/${x.performances[0].sceneId}/${x.dialect.id}/`,
+    };
+  });
+
+// 有坐标但一份演绎都没有的点——地图上留白，正是「还没人录」的地方
+const blanks = Array.from(dialects.values())
+  .filter((d) => d.lng !== undefined && d.lat !== undefined && !withPerf.some((w) => w.dialect.id === d.id))
+  .map((d) => {
+    const [cx, cy] = project(d.lng!, d.lat!);
+    return { dialect: d, cx, cy };
+  });
+
+const humanCount = withPerf.filter((w) => w.human).length;
+
+// 主图裁到大陆+海南+台湾。南海诸岛按中国制图惯例做成右下角插图——
+// 两张图共用同一条 path，只是 viewBox 不同，既不删岛也不让它把大陆压成邮票。
+const [mx0, my0] = project(72.5, 54.8);
+const [mx1, my1] = project(136.5, 17.2);
+const MAIN_VB = `${mx0} ${my0} ${(mx1 - mx0).toFixed(2)} ${(my1 - my0).toFixed(2)}`;
+const [ix0, iy0] = project(105, 24.5);
+const [ix1, iy1] = project(123, 2.5);
+const INSET_VB = `${ix0} ${iy0} ${(ix1 - ix0).toFixed(2)} ${(iy1 - iy0).toFixed(2)}`;
+---
+<Base
+  title="方言地图 — 各说各话"
+  description="AI 合成的是一团摊开的光晕，真人录音才是一个清楚的点。这张图会随着投稿一点点变清楚。"
+>
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <h1>这张图还很糊</h1>
+    <p class="lede">
+      <strong>模糊的一团 = AI 合成</strong>，只能给到区级，摊开在好几个省上；
+      <strong>清楚的一个点 = 真人录音</strong>，落在具体的县市乡镇。
+      每来一份真人录音，这张图就清楚一点——<strong>这是这个项目唯一的成长方式</strong>。
+    </p>
+  </header>
+
+  <div class="mapwrap">
+    <svg class="map" viewBox={MAIN_VB} role="img" aria-label="中国方言分布示意图">
+      <defs>
+        <radialGradient id="halo">
+          <stop offset="0%" stop-color="var(--cut)" stop-opacity="0.55" />
+          <stop offset="55%" stop-color="var(--cut)" stop-opacity="0.18" />
+          <stop offset="100%" stop-color="var(--cut)" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <path class="outline" d={outline.path} />
+      {withPerf.filter((w) => !w.human).map((w) => (
+        <a href={w.href} aria-label={`${w.dialect.name}（AI 合成，${levelLabel(w.dialect.level)}）`}>
+          <circle class="halo" cx={w.cx} cy={w.cy} r={w.r} fill="url(#halo)" />
+          <text class="lbl" x={w.cx} y={w.cy + w.r * 0.62 + 1.3}>{w.dialect.name}</text>
+        </a>
+      ))}
+      {withPerf.filter((w) => w.human).map((w) => (
+        <a href={w.href} aria-label={`${w.dialect.name}（真人录音）`}>
+          <circle class="pin" cx={w.cx} cy={w.cy} r="0.55" />
+          <text class="lbl real" x={w.cx} y={w.cy - 1.4}>{w.dialect.name}</text>
+        </a>
+      ))}
+      {blanks.map((b) => (
+        <g aria-label={`${b.dialect.name}（还没有录音）`}>
+          <circle class="blank" cx={b.cx} cy={b.cy} r="0.45" />
+          <text class="lbl faint start" x={b.cx + 0.9} y={b.cy + 0.5}>{b.dialect.name}</text>
+        </g>
+      ))}
+    </svg>
+    <svg class="inset" viewBox={INSET_VB} role="img" aria-label="南海诸岛">
+      <path class="outline" d={outline.path} />
+    </svg>
+  </div>
+
+  <div class="legend">
+    <span class="lg"><i class="sw halo"></i>AI 合成 · 区级光晕</span>
+    <span class="lg"><i class="sw pin"></i>真人录音 · 具体地点</span>
+    <span class="lg"><i class="sw blank"></i>还没有录音</span>
+  </div>
+
+  <section class="ask">
+    {humanCount === 0 ? (
+      <>
+        <h2>整张图上，还没有一个真人录音</h2>
+        <p>
+          现在你看到的每一团光，都是模型猜出来的一个笼统腔调。
+          <strong>你的村还是空白的。</strong>
+        </p>
+      </>
+    ) : (
+      <>
+        <h2>已经有 {humanCount} 个地方是真的了</h2>
+        <p>其余的还都是模型猜出来的笼统腔调。<strong>你的村可能还是空白的。</strong></p>
+      </>
+    )}
+    <a class="cta" href="/record/">录一段，把你那儿点亮 →</a>
+    <p class="fine">
+      十五秒，不用注册。也可以先去 <a href="/weekly/">一句话挑战</a> 试试水，那儿只用录一句。
+    </p>
+  </section>
+</Base>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
+  .lede { max-width: 36em; margin: 0; color: var(--ink-2); font-size: 15.5px; }
+  .lede strong { color: var(--cut-lit); }
+
+  .mapwrap { margin: 26px 0 10px; overflow-x: auto; position: relative; max-width: 900px; margin-inline: auto; }
+  .inset {
+    position: absolute; right: 0; bottom: 0; width: 13%; height: auto;
+    border: 1px solid var(--rule); background: var(--night);
+  }
+  .map { width: 100%; max-width: 900px; height: auto; display: block; margin: 0 auto; }
+  .outline { fill: var(--night-2); stroke: var(--rule); stroke-width: 0.12; }
+  .halo { pointer-events: auto; }
+  .pin { fill: var(--cut); stroke: var(--paper); stroke-width: 0.15; }
+  .blank { fill: none; stroke: var(--dust); stroke-width: 0.14; stroke-dasharray: 0.3 0.3; }
+  .lbl {
+    font-family: "Noto Sans SC", sans-serif; font-size: 1.5px; fill: var(--ink-2);
+    text-anchor: middle; letter-spacing: .08em; paint-order: stroke;
+    stroke: var(--night); stroke-width: 0.35px;
+  }
+  .lbl.real { fill: var(--cut); font-weight: 600; }
+  .lbl.faint { fill: var(--dust); }
+  .lbl.start { text-anchor: start; }
+  .map a:hover .halo { opacity: .75; }
+  .map a:focus-visible { outline: 2px solid var(--cut-lit); }
+
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); margin-bottom: 34px; }
+  .lg { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+  .sw.halo { background: radial-gradient(var(--cut) 0%, rgba(183,36,31,.18) 55%, transparent 100%); }
+  .sw.pin { background: var(--cut); width: 7px; height: 7px; }
+  .sw.blank { border: 1px dashed var(--dust); width: 9px; height: 9px; }
+
+  .ask { border-top: 1px solid var(--rule); padding-top: 26px; max-width: 36em; }
+  .ask h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 26px; color: var(--cut); margin: 0 0 10px; }
+  .ask p { color: var(--ink-2); margin: 0 0 16px; }
+  .ask strong { color: var(--cut-lit); }
+  .cta {
+    display: inline-block; font-family: "Noto Sans SC", sans-serif; font-size: 14px;
+    text-decoration: none; background: var(--cut); color: #FFF6E8; padding: 13px 26px; border-radius: 2px;
+    transition: background .2s;
+  }
+  .cta:hover { background: var(--cut-lit); }
+  .cta:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .fine { font-size: 13px; color: var(--dust); margin: 16px 0 0; }
+  .fine a { color: var(--cut-lit); }
+</style>

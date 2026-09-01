@@ -1,0 +1,12 @@
+id: w-shoushenme.dongbei
+sceneId: w-shoushenme
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你瞅啥？瞅你咋地！
+    textMandarin: 你看什么？看你怎么了！
+    note: 这是东北话流传最广的一组对句，「咋地」是挑衅的收尾，几乎成了这门方言的名片。
+    audio: /audio/w-shoushenme.dongbei/b1.mp3
+    durationMs: 2832

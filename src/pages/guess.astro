@@ -1,0 +1,174 @@
+---
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import { loadDialects } from '../lib/dialect-tree';
+import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const dialects = loadDialects(DATA_DIR);
+const scenes = loadScenes(DATA_DIR);
+const performances = loadPerformances(DATA_DIR);
+validateContent(scenes, performances, dialects);
+
+// 只有 AI 合成的才进题库：真人录音是答案本身，拿来考人没意义，
+// 而且这个游戏的产出是要拿来判断 AI 音准的。
+const clips = performances
+  .filter((p) => p.source === 'tts')
+  .flatMap((p) =>
+    p.lines
+      .filter((l) => l.audio)
+      .map((l) => ({
+        clip: `${p.id}/${l.beatId}`,
+        audio: l.audio!,
+        dialectId: p.dialectId,
+        dialectName: dialects.get(p.dialectId)!.name,
+        sceneTitle: scenes.get(p.sceneId)!.title,
+        text: l.textDialect,
+      })),
+  );
+
+const options = [...new Set(clips.map((c) => c.dialectId))].map((id) => ({
+  id,
+  name: dialects.get(id)!.name,
+}));
+---
+<Base
+  title="盲听猜方言 — 各说各话"
+  description="不给标签，放一段，猜是哪儿的。你猜错的地方，正好是这个站最该修的地方。"
+>
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <h1>这是哪儿的话</h1>
+    <p class="lede">
+      不给标签，放一段，猜。<strong>你猜错的地方，正好是这个站最该修的地方</strong>——
+      站上所有语音都是 AI 合成的，没人验证过像不像。一千个人盲听，哪条被认错得最多，
+      哪条就最该被真人录音替换掉。<a href="#why">这是怎么回事 ↓</a>
+    </p>
+  </header>
+
+  {clips.length === 0 ? (
+    <p class="empty">还没有可以拿来考人的音频。</p>
+  ) : (
+    <section class="game" id="game">
+      <div class="stage">
+        <button class="play" id="play" type="button">▶ 放一遍</button>
+        <span class="score" id="score"></span>
+        <audio id="clip" preload="auto"></audio>
+      </div>
+      <div class="opts" id="opts"></div>
+      <div class="reveal" id="reveal" hidden></div>
+      <button class="next" id="next" type="button" hidden>下一题 →</button>
+    </section>
+  )}
+
+  <section class="why" id="why">
+    <h2>为什么要做这个游戏</h2>
+    <p>
+      这个站有个绕不开的软肋：所有语音都是 AI 合成的，标着「未经母语者校对」，
+      因为<strong>没人验证过那口音到底像不像</strong>。找语言学家一条条听，成本高到做不成。
+    </p>
+    <p>
+      但盲听可以。如果冀鲁官话那条有七成的人猜成东北话，那就是硬证据——
+      不需要专家，不需要问卷，<strong>玩下来数据就有了</strong>。
+      这个游戏的产出，正好是这个项目最缺的东西。
+    </p>
+    <p class="worstwrap">
+      <span id="worst">正在读最容易被认错的几条…</span>
+    </p>
+    <p class="fine">
+      成绩只存在你自己的浏览器里。我们记录的是「哪条被猜成了什么」，不记录是谁猜的——
+      同投票一样，只存网络地址的哈希摘要。
+    </p>
+  </section>
+</Base>
+
+<script define:vars={{ clips, options }}>
+  window.__GUESS__ = { clips, options };
+</script>
+<script>
+  import { initGuess } from '../scripts/guess';
+  const data = (window as unknown as { __GUESS__?: { clips: never[]; options: never[] } }).__GUESS__;
+  const el = document.getElementById('game');
+  if (el && data && data.clips.length > 0) initGuess(el, data.clips, data.options);
+
+  // 「最容易被认错的几条」——直接把这个游戏的产出摆出来，
+  // 让人看见自己的每一次点击都在给这个站做质检
+  const worst = document.getElementById('worst');
+  if (worst) {
+    fetch('/api/guess')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { worst: Array<{ actual: string; rate: number; total: number }>; total: number }) => {
+        if (d.total === 0) { worst.textContent = '还没有人玩过——你猜的第一题就是第一份数据。'; return; }
+        if (d.worst.length === 0) {
+          worst.textContent = `已经收到 ${d.total} 次猜测，还没有哪条攒够 5 次样本。`;
+          return;
+        }
+        const names = (window as unknown as { __GUESS__: { options: Array<{ id: string; name: string }> } })
+          .__GUESS__.options;
+        const nameOf = (id: string) => names.find((o) => o.id === id)?.name ?? id;
+        worst.textContent =
+          `目前最容易被认错的：` +
+          d.worst.map((w) => `${nameOf(w.actual)}（${w.rate}% 猜对，${w.total} 人听过）`).join('、') +
+          `。累计 ${d.total} 次猜测。`;
+      })
+      .catch(() => { worst.textContent = '统计暂时读不出来。'; });
+  }
+</script>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
+  .lede { max-width: 34em; margin: 0; color: var(--ink-2); font-size: 15.5px; }
+  .lede strong { color: var(--cut-lit); }
+  .lede a { color: var(--cut-lit); }
+  .empty { color: var(--dust); margin-top: 30px; }
+
+  .game { margin: 34px 0 10px; max-width: 42em; }
+  .stage { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .play {
+    font-family: "Noto Sans SC", sans-serif; font-size: 16px; cursor: pointer;
+    background: var(--cut); color: #FFF6E8; border: none; padding: 16px 34px; border-radius: 2px;
+    transition: background .2s;
+  }
+  .play:hover { background: var(--cut-lit); }
+  .play:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .score { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); font-variant-numeric: tabular-nums; }
+
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2px; }
+  .opts :global(.opt) {
+    font: inherit; font-size: 16px; cursor: pointer; padding: 18px 14px;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg);
+    transition: border-color .18s, transform .15s, background .18s;
+  }
+  .opts :global(.opt:hover:not([disabled])) { border-color: var(--cut); transform: translateY(-1px); }
+  .opts :global(.opt:focus-visible) { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .opts :global(.opt[disabled]) { opacity: .5; cursor: default; }
+  .opts :global(.opt.right) { border-color: var(--cut); background: var(--paper); color: var(--cut); opacity: 1; }
+  .opts :global(.opt.wrong) { border-color: var(--dust); text-decoration: line-through; }
+
+  .reveal { margin-top: 20px; border-left: 3px solid var(--rule); padding: 4px 0 4px 16px; }
+  .reveal.ok { border-left-color: var(--cut); }
+  .reveal.no { border-left-color: var(--dust); }
+  .reveal :global(.verdict) { font-family: "Noto Sans SC", sans-serif; font-size: 14px; color: var(--cut-lit); margin: 0 0 8px; letter-spacing: .06em; }
+  .reveal :global(.said) { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(20px, 3vw, 26px); color: var(--cut); margin: 0 0 6px; line-height: 1.5; }
+  .reveal :global(.meta) { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); margin: 0 0 6px; }
+  .reveal :global(.others) { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+
+  .next {
+    margin-top: 18px; font-family: "Noto Sans SC", sans-serif; font-size: 14px; cursor: pointer;
+    background: transparent; border: 1px solid var(--cut); color: var(--cut); padding: 11px 24px; border-radius: 2px;
+    transition: background .18s, color .18s;
+  }
+  .next:hover { background: var(--cut); color: #FFF6E8; }
+  .next:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+
+  .why { margin-top: 54px; border-top: 1px solid var(--rule); padding-top: 26px; max-width: 36em; }
+  .why h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 24px; color: var(--cut); margin: 0 0 12px; }
+  .why p { color: var(--ink-2); margin: 0 0 14px; }
+  .why strong { color: var(--cut-lit); }
+  .worstwrap { font-size: 14px; color: var(--ink-2); background: var(--night-2); border: 1px solid var(--rule); padding: 14px 16px; }
+  .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; }
+  @media (prefers-reduced-motion: reduce) { .play, .next, .opts :global(.opt) { transition: none; } }
+</style>
