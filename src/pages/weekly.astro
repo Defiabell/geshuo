@@ -1,6 +1,7 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
+import { TURNSTILE_SITEKEY } from '../lib/config';
 import { loadDialects, levelLabel } from '../lib/dialect-tree';
 import { loadScenes, loadPerformances, validateContent, linesForBeat } from '../lib/content';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
@@ -89,6 +90,8 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
           <input id="contact" type="text" placeholder="邮箱 / GitHub 用户名" autocomplete="off" />
         </label>
 
+        <div class="ts" id="ts-host" aria-label="人机验证"></div>
+
         <div class="beat" data-scene={cur.scene.id} data-beat={cur.beat.id}>
           <p class="ref">{cur.beat.intent}</p>
           <div class="ctl">
@@ -127,12 +130,16 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   )}
 </Base>
 
+<script define:vars={{ sitekey: TURNSTILE_SITEKEY }}>
+  window.__SITEKEY__ = sitekey;
+</script>
 <script>
   import { initChain } from '../scripts/chain';
   import { initRecorder } from '../scripts/recorder';
   const el = document.getElementById('compare');
   if (el) initChain(el.parentElement ?? document.body);
-  initRecorder(document);
+  // sitekey 走 window：define:vars 不作用于模块脚本
+  initRecorder(document, (window as unknown as { __SITEKEY__?: string }).__SITEKEY__);
 </script>
 
 <style>
@@ -182,6 +189,7 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   .f input { font: inherit; font-size: 15px; padding: 11px 14px; background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
   .f input:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
   .hint { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
+  .ts { margin: 14px 0 4px; }
   .beat { border-top: 1px solid var(--rule); padding-top: 16px; }
   .ref { margin: 0 0 12px; color: var(--ink-2); font-size: 15px; }
   .ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

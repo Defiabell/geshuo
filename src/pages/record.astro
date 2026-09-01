@@ -1,6 +1,7 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
+import { TURNSTILE_SITEKEY } from '../lib/config';
 import { loadDialects } from '../lib/dialect-tree';
 import { loadScenes, loadPerformances, validateContent } from '../lib/content';
 import { NO_SPEAKER } from '../lib/types';
@@ -62,6 +63,8 @@ const list = Array.from(scenes.values()).map((scene) => ({
     </p>
   </section>
 
+  <div class="ts" id="ts-host" aria-label="人机验证"></div>
+
   {list.map(({ scene, beats }) => (
     <section class="scene" data-scene={scene.id}>
       <h2>{scene.title}</h2>
@@ -90,9 +93,14 @@ const list = Array.from(scenes.values()).map((scene) => ({
   ))}
 </Base>
 
+<script define:vars={{ sitekey: TURNSTILE_SITEKEY }}>
+  window.__SITEKEY__ = sitekey;
+</script>
 <script>
   import { initRecorder } from '../scripts/recorder';
-  initRecorder(document);
+  // sitekey 由上面那段 define:vars 的内联脚本挂在 window 上——
+  // define:vars 不作用于模块脚本，模块里直接写 sitekey 会是 undefined
+  initRecorder(document, (window as unknown as { __SITEKEY__?: string }).__SITEKEY__);
 </script>
 
 <style>
@@ -121,6 +129,7 @@ const list = Array.from(scenes.values()).map((scene) => ({
   .how a { color: var(--cut-lit); }
   .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; margin: 0; }
 
+  .ts { margin: 18px 0 6px; min-height: 0; }
   .scene { margin-top: 44px; }
   .sit { color: var(--ink-2); margin: 0 0 18px; }
   .beat { border-top: 1px solid var(--rule); padding: 18px 0; }

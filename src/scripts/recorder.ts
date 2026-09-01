@@ -11,7 +11,11 @@
  * 都会让人以为是自己操作错了。
  */
 
-const MAX_BYTES = 5 * 1024 * 1024;
+import { getToken, initTurnstile } from './turnstile';
+
+// 跟服务端 functions/api/upload.ts 的 MAX_BYTES 保持一致——
+// 前端先挡一道只是为了给人即时反馈，真正的闸在服务端
+const MAX_BYTES = 3 * 1024 * 1024;
 
 /** MediaRecorder 各家支持的容器不同，挑第一个当前浏览器认的 */
 function pickMime(): string | undefined {
@@ -28,8 +32,20 @@ interface BeatState {
   stream: MediaStream | null;
 }
 
-export function initRecorder(root: Document | HTMLElement): void {
+export function initRecorder(root: Document | HTMLElement, sitekey?: string): void {
   const placeEl = root.querySelector<HTMLInputElement>('#place');
+  // 人机验证组件：页面上有位置就挂上去。没挂成也不拦着人录，
+  // 只在上传那一刻才会因为拿不到令牌而失败并说明原因。
+  // 容器 id 刻意不叫 turnstile：带 id 的元素会被挂到 window 上，
+  // 那会遮蔽真正的 window.turnstile API（见 turnstile.ts 的 apiOf 注释）
+  const tsHost = root.querySelector<HTMLElement>('#ts-host');
+  if (tsHost && sitekey) {
+    void initTurnstile(tsHost, sitekey).catch((e) => {
+      // 之前这里是空 catch，结果上面那个遮蔽 bug 静默了很久才被发现。
+      // 加载失败要留痕，否则只能看到"上传按钮点了没反应"。
+      console.warn('[geshuo] 人机验证初始化失败：', e);
+    });
+  }
   const contactEl = root.querySelector<HTMLInputElement>('#contact');
   const beats = Array.from(root.querySelectorAll<HTMLElement>('.beat'));
   const mime = pickMime();
@@ -121,8 +137,21 @@ export function initRecorder(root: Document | HTMLElement): void {
       if (!st.blob) return;
 
       sendBtn.disabled = true;
+
+      // 拿不到令牌**不中止上传**。这个站的投稿人主要在国内，而
+      // challenges.cloudflare.com 未必稳定可达——硬拦会挡掉最该来投稿的人。
+      // 服务端对没带令牌的请求会按很小的额度放行，门开着但开得小。
+      let token = '';
+      try {
+        say('正在过人机验证…');
+        token = await getToken();
+      } catch {
+        say('人机验证没加载出来，仍然可以传（今天额度会少一些）');
+      }
+
       say('上传中…');
       const fd = new FormData();
+      if (token) fd.set('turnstile', token);
       fd.set('audio', st.blob, 'clip');
       fd.set('place', place);
       fd.set('contact', contactEl?.value.trim() ?? '');

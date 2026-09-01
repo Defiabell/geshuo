@@ -21,3 +21,23 @@ CREATE TABLE IF NOT EXISTS guesses (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS guesses_clip ON guesses(clip);
+
+-- 上传防滥用。R2 前缀列举那套计数被换掉了：它每次上传要花一个 list 操作、
+-- 并发时会超发，而且只能按 IP 挡——换个网络就绕过去了。
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+-- 运行时开关：被刷的时候不用重新部署就能关掉上传
+INSERT OR IGNORE INTO settings (key, value) VALUES ('uploads_enabled', '1');
+
+CREATE TABLE IF NOT EXISTS upload_quota (
+  scope   TEXT NOT NULL,   -- 'global' 或 'ip:<hash>'
+  day     TEXT NOT NULL,
+  n       INTEGER NOT NULL DEFAULT 0,
+  last_at TEXT,
+  -- 上一次的时间。必须是独立的列：SQLite 的 RETURNING 看不到更新前的值，
+  -- 用子查询取会取到刚写进去的 now()，导致最小间隔判断恒为 0
+  prev_at TEXT,
+  PRIMARY KEY (scope, day)
+);
