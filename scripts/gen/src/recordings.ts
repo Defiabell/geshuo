@@ -177,28 +177,47 @@ button{font:inherit;font-size:13px;cursor:pointer;border:1px solid #B7241F;backg
 button:hover{background:#B7241F;color:#FFF6E8}
 .mark{font-size:12px;color:#B7241F}
 #out{margin-top:26px;background:#FFFAF0;border:1px solid #E0CFA8;padding:16px 18px}
-#out h2{font-size:16px;color:#B7241F;margin:0 0 8px}
+#out h2{font-size:16px;color:#B7241F;margin:0 0 8px;display:flex;gap:10px;align-items:center}
+#out h2 button{font-size:12px;padding:4px 12px}
+#tip{font-size:12px;color:#9A8461;font-weight:400}
 pre{white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#6B5540;margin:0}
 </style></head><body><div class="wrap">
 <h1>投稿审听台</h1>
 <p class="sub">${objects.length} 条投稿 · 本地文件，不在公网上。听完标「采用 / 丢弃」，下面会给出要跑的命令。</p>
 ${rows.join('')}
-<div id="out"><h2>你的决定</h2><pre id="cmd">还没标记。</pre></div>
+<div id="out"><h2>你的决定 <button id="copy" type="button">复制</button><span id="tip"></span></h2><pre id="cmd">还没标记。</pre></div>
 </div><script>
-const state={};
-function render(){
+// 标记存进 localStorage：之前只存在内存里，刷一下页面全丢，
+// 而这页恰恰是"听半天才标完"的那种页面。
+const KEY='geshuo:inbox-decisions';
+let state={};
+try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){state={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function text(){
   const keep=Object.entries(state).filter(([,v])=>v==='keep').map(([k])=>k);
   const drop=Object.entries(state).filter(([,v])=>v==='drop').map(([k])=>k);
   const lines=[];
-  if(keep.length)lines.push('# 采用这几条（把它们接进站点，需要先定方言点归属）：\\n'+keep.join(' '));
-  if(drop.length)lines.push('# 丢弃这几条（从 R2 删掉）：\\n'+drop.map(id=>'pnpm recordings:rm '+id).join('\\n'));
-  document.getElementById('cmd').textContent=lines.join('\\n\\n')||'还没标记。';
+  if(keep.length)lines.push('采用 '+keep.length+' 条：'+keep.join(' '));
+  if(drop.length)lines.push('丢弃 '+drop.length+' 条：'+drop.join(' '));
+  return lines.join('\\n');
 }
+function paint(el,v){
+  el.className='rec'+(v?' '+v:'');
+  el.querySelector('.mark').textContent=v==='keep'?'已标：采用':v==='drop'?'已标：丢弃':'';
+}
+function render(){document.getElementById('cmd').textContent=text()||'还没标记。';save();}
 document.querySelectorAll('.rec').forEach(el=>{
   const id=el.dataset.id;
-  el.querySelector('.keep').addEventListener('click',()=>{state[id]='keep';el.className='rec keep';el.querySelector('.mark').textContent='已标：采用';render();});
-  el.querySelector('.drop').addEventListener('click',()=>{state[id]='drop';el.className='rec drop';el.querySelector('.mark').textContent='已标：丢弃';render();});
+  paint(el,state[id]);
+  el.querySelector('.keep').addEventListener('click',()=>{state[id]='keep';paint(el,'keep');render();});
+  el.querySelector('.drop').addEventListener('click',()=>{state[id]='drop';paint(el,'drop');render();});
 });
+document.getElementById('copy').addEventListener('click',async()=>{
+  const t=text(); if(!t)return;
+  try{await navigator.clipboard.writeText(t);document.getElementById('tip').textContent='已复制，贴给 Claude 就行';}
+  catch(e){document.getElementById('tip').textContent='复制不了，手动选下面那块';}
+});
+render();
 </script></body></html>`;
 
   writeFileSync(join(INBOX, 'index.html'), html, 'utf8');
