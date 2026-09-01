@@ -32,3 +32,6 @@ public/audio/
 
 # wrangler 本地状态
 .wrangler/
+
+# 投稿录音的本地审听目录：别人的声音和联系方式，绝不进仓库
+.inbox/

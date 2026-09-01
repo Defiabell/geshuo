@@ -23,7 +23,9 @@
     "gen:script": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-script.ts",
     "gen:audio": "tsx --env-file-if-exists=../../envs/geshuo.env --env-file-if-exists=.env scripts/gen/src/generate-audio.ts",
     "gen:durations": "tsx scripts/gen/src/measure-all.ts",
-    "gen:map": "tsx scripts/gen/src/build-map.ts"
+    "gen:map": "tsx scripts/gen/src/build-map.ts",
+    "recordings:pull": "tsx --env-file-if-exists=../../envs/cloudflare.env --env-file-if-exists=.env scripts/gen/src/recordings.ts pull",
+    "recordings:rm": "tsx --env-file-if-exists=../../envs/cloudflare.env --env-file-if-exists=.env scripts/gen/src/recordings.ts rm"
   },
   "dependencies": {
     "astro": "7.2.2",
