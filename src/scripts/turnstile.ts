@@ -12,7 +12,8 @@
  */
 
 const SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-const READY_TIMEOUT_MS = 15000;
+// 6 秒。等不到就走小额度那条路，让人干等 15 秒毫无意义
+const READY_TIMEOUT_MS = 6000;
 
 interface TurnstileApi {
   render(el: string | HTMLElement, opts: Record<string, unknown>): string;

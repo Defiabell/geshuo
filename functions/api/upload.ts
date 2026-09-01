@@ -35,15 +35,16 @@ interface Env {
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_TEXT = 200;
 /** 过了人机验证的，每 IP 每天可以传这么多 */
-const IP_PER_DAY = 20;
+const IP_PER_DAY = 30;
 /**
  * 没过人机验证的，每 IP 每天只给这么多。
  *
  * 为什么不是直接拒绝：这个站的投稿人主要在国内，而 challenges.cloudflare.com
  * 未必稳定可达。硬性要求人机验证，挡掉的恰恰是最该来投稿的老乡。
- * 所以降级放行——门开着，但开得很小，配合全局上限足以兜住。
+ * 所以降级放行——门开着，但开得小。数字定成 8 是有依据的：一出戏是 5 个说话拍，
+ * 低于这个数的话，一个正常人连一场都录不完就被挡住了，那不叫限流叫拒收。
  */
-const IP_PER_DAY_UNVERIFIED = 3;
+const IP_PER_DAY_UNVERIFIED = 8;
 const GLOBAL_PER_DAY = 500;
 /** 两次上传之间的最小间隔（毫秒）。一拍几秒钟，正常人不会比这更快 */
 const MIN_GAP_MS = 2000;

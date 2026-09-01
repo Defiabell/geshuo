@@ -146,7 +146,7 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
         say('正在过人机验证…');
         token = await getToken();
       } catch {
-        say('人机验证没加载出来，仍然可以传（今天额度会少一些）');
+        say('跳过人机验证，直接传（今天最多 8 条）');
       }
 
       say('上传中…');
