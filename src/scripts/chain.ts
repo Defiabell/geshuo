@@ -1,13 +1,18 @@
+import { setPlayIcon } from './play-icon';
+
 /**
- * 「四地连听」——把同一拍的各方言音频连着放完。
+ * 「N 地连听」——把同一拍的各方言音频连着放完。
  *
  * 这是这个站的核心承诺：同一句话，四种腔调连着砸过来。在此之前对比页
  * 一个播放按钮都没有，用户得回场景页一条一条点，那个「哇」的瞬间从来
  * 没发生过。
  *
- * 播放期间当前列高亮。任何一次新的播放（连听或单列）都会作废上一轮的
- * 回调——沿用 player.ts 的 generation 令牌做法：pause() 触发的 AbortError
- * 可能几秒后才 resolve，不作废就会劫持后一次播放。
+ * 单列的小三角是**播放/暂停切换**，不是「再点一次从头读」——后者是很讨厌的
+ * 交互：你只想停一下，它却把你听到一半的位置扔了。
+ *
+ * generation 令牌作废上一轮的回调（pause() 触发的 AbortError 可能几秒后才
+ * resolve，不作废就会劫持后一次播放）；但**暂停不递增 generation**，因为
+ * 暂停后那个 audio 还要接着用，它的 'ended' 还得把连听推到下一列。
  */
 
 const GAP_MS = 320;
@@ -21,14 +26,24 @@ export function initChain(root: HTMLElement): void {
   let timer: number | null = null;
   let generation = 0;
   let chaining = false;
+  let currentCol: HTMLElement | null = null;
+  let paused = false;
 
-  const clear = () => cols.forEach((c) => c.classList.remove('on'));
+  const btnOf = (col: HTMLElement) => col.querySelector<HTMLButtonElement>('.one');
+  const resetIcons = () => cols.forEach((c) => setPlayIcon(btnOf(c), 'play'));
+
+  const clear = () => {
+    cols.forEach((c) => c.classList.remove('on'));
+    resetIcons();
+  };
 
   const stop = () => {
     generation += 1;
     if (audio) { audio.pause(); audio = null; }
     if (timer !== null) { clearTimeout(timer); timer = null; }
     chaining = false;
+    currentCol = null;
+    paused = false;
     clear();
     if (chainBtn) chainBtn.textContent = chainBtn.dataset.idle!;
   };
@@ -37,14 +52,26 @@ export function initChain(root: HTMLElement): void {
   const playCol = (col: HTMLElement, onEnd?: () => void) => {
     clear();
     col.classList.add('on');
+    currentCol = col;
+    paused = false;
     const my = ++generation;
-    const src = col.dataset.audio!;
-    audio = new Audio(src);
-    audio.addEventListener('ended', () => { if (my === generation) onEnd?.(); });
-    void audio.play().catch(() => {
-      // 自动播放被拦或音频坏掉时不能卡死整条链——给个兜底时长继续往下走
+    audio = new Audio(col.dataset.audio!);
+    audio.addEventListener('ended', () => {
       if (my !== generation) return;
-      timer = window.setTimeout(() => { if (my === generation) onEnd?.(); }, 1800);
+      setPlayIcon(btnOf(col), 'play');
+      currentCol = null;
+      onEnd?.();
+    });
+    setPlayIcon(btnOf(col), 'pause');
+    void audio.play().catch(() => {
+      // 自动播放被拦或音频坏掉时不能卡死整条链，也不能让图标停在暂停态
+      if (my !== generation) return;
+      setPlayIcon(btnOf(col), 'play');
+      timer = window.setTimeout(() => {
+        if (my !== generation) return;
+        currentCol = null;
+        onEnd?.();
+      }, 1800);
     });
   };
 
@@ -67,8 +94,22 @@ export function initChain(root: HTMLElement): void {
   });
 
   for (const col of cols) {
-    col.querySelector('.one')?.addEventListener('click', () => {
-      // 连听途中点单列 = 跳出连听只听这一条，不是从这条继续往下连
+    btnOf(col)?.addEventListener('click', () => {
+      // 点的就是正在响的这列 → 暂停 / 继续。连听途中暂停，再点会接着
+      // 往下连，因为暂停没作废 generation，'ended' 仍然连着 chain()。
+      if (currentCol === col && audio) {
+        if (paused) {
+          paused = false;
+          setPlayIcon(btnOf(col), 'pause');
+          void audio.play().catch(() => setPlayIcon(btnOf(col), 'play'));
+        } else {
+          paused = true;
+          audio.pause();
+          setPlayIcon(btnOf(col), 'play');
+        }
+        return;
+      }
+      // 换一列：跳出连听，只听这一条
       stop();
       playCol(col);
     });
