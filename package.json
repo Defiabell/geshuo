@@ -25,7 +25,9 @@
     "gen:durations": "tsx scripts/gen/src/measure-all.ts",
     "gen:map": "tsx scripts/gen/src/build-map.ts",
     "recordings:pull": "tsx --env-file-if-exists=../../envs/cloudflare.env --env-file-if-exists=.env scripts/gen/src/recordings.ts pull",
-    "recordings:rm": "tsx --env-file-if-exists=../../envs/cloudflare.env --env-file-if-exists=.env scripts/gen/src/recordings.ts rm"
+    "recordings:rm": "tsx --env-file-if-exists=../../envs/cloudflare.env --env-file-if-exists=.env scripts/gen/src/recordings.ts rm",
+    "recordings:draft": "tsx scripts/gen/src/accept.ts draft",
+    "recordings:accept": "tsx scripts/gen/src/accept.ts accept"
   },
   "dependencies": {
     "astro": "7.2.2",
