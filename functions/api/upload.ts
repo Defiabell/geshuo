@@ -129,15 +129,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
   const token = clean(form.get('turnstile'));
-  // 分级：过了验证的按正常额度，没过的按极小额度放行。
-  // 令牌**存在但无效**（伪造、过期、重放）一律拒绝——那是明确的恶意信号，
-  // 跟"根本拿不到令牌"（网络不通）是两回事，不能混为一谈。
+  /**
+   * **人机验证只用来加额度，永远不用来拦人。**
+   *
+   * 原来的写法是「令牌无效就 403」。听起来合理，实际上第一天就把唯一的
+   * 投稿人关在了门外：密钥轮换、widget 配置变更、令牌过期、时钟偏差、
+   * 国内访问 challenges.cloudflare.com 不稳——任何一个都会让真人拿到
+   * 「人机验证没通过」，而他什么也没做错。
+   *
+   * 一个只有几个投稿人的站，把真人挡住的代价远大于让攻击者多拿几条额度。
+   * 兜底的是全站每日总闸和那个能一行关停的开关，那两个不误伤任何人。
+   */
   let verified = false;
   if (token && env.TURNSTILE_SECRET) {
     verified = await verifyTurnstile(token, ip, env.TURNSTILE_SECRET);
-    // 令牌**存在但无效**（伪造、过期、重放）一律拒绝——那是明确的恶意信号。
-    // 「根本没带令牌」是另一回事（网络不通），走下面的小额度放行。
-    if (!verified) return json({ error: '人机验证没通过，刷新页面再试一次' }, 403);
   }
 
   const audio = form.get('audio');

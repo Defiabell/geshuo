@@ -141,12 +141,13 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
       // 拿不到令牌**不中止上传**。这个站的投稿人主要在国内，而
       // challenges.cloudflare.com 未必稳定可达——硬拦会挡掉最该来投稿的人。
       // 服务端对没带令牌的请求会按很小的额度放行，门开着但开得小。
+      // 拿不到令牌照样传。人机验证在这个站只用来加额度，从不拦人——
+      // 详见 functions/api/upload.ts 里的说明。
       let token = '';
       try {
-        say('正在过人机验证…');
         token = await getToken();
       } catch {
-        say('跳过人机验证，直接传（今天最多 8 条）');
+        /* 拿不到就算了，服务端会按小额度放行 */
       }
 
       say('上传中…');
