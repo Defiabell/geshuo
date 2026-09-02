@@ -1,0 +1,40 @@
+id: scrape.chengyu
+sceneId: scrape
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你个龟儿会不会开车哦？变道不打灯，你两只眼睛是出气的嗦？
+    textMandarin: 你这王八蛋会不会开车？变道不打灯，你两只眼睛是用来出气的吗？
+    note: 龟儿＝川渝使用频率最高的骂词，熟人之间能当语气词，吵架时是实打实的骂。嗦＝吗。
+    audio: /audio/scrape.chengyu/b1.mp3
+    durationMs: 5120
+  - beatId: b2
+    textDialect: 咋子嘛？我早就在这个道上跑起的，是你自己贴过来的，莫赖我。
+    textMandarin: 怎么了？我早就在这条道上开着了，是你自己贴过来的，别赖我。
+    note: 咋子＝怎么，莫＝别，跑起的＝开着的（「起」是川渝的持续体标记）。
+    audio: /audio/scrape.chengyu/b2.mp3
+    durationMs: 4800
+  - beatId: b3
+    textDialect: 莫扯了，我车上记录仪拍起的，一调出来看哪个没得理。
+    textMandarin: 别扯了，我车上行车记录仪拍着呢，一调出来看谁没理。
+    note: 哪个＝谁，没得＝没有。
+    audio: /audio/scrape.chengyu/b3.mp3
+    durationMs: 4800
+  - beatId: b4
+    textDialect: 拍到又咋子？有本事你报警噻，我还怕你不成？
+    textMandarin: 拍到又怎样？有本事你报警啊，我还怕你不成？
+    note: 噻＝啊/嘛（川渝句末助词，此处带挑衅意味）。
+    audio: /audio/scrape.chengyu/b4.mp3
+    durationMs: 3520
+  - beatId: b5
+    textDialect: 报就报！老子今天还就不走了，看你个龟儿能耗到啥子时候！
+    textMandarin: 报就报！我今天还就不走了，看你这王八蛋能耗到什么时候！
+    note: 老子＝川渝男性吵架时的自称，语气比「我」冲得多。啥子时候＝什么时候。
+    audio: /audio/scrape.chengyu/b5.mp3
+    durationMs: 6560
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 后面的喇叭响成一片。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

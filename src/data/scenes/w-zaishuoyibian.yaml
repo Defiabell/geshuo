@@ -1,0 +1,17 @@
+id: w-zaishuoyibian
+title: 你再说一遍
+situation: 对面那句话你听清了，但你希望他没说过。
+weekly: '2026-09-08'
+
+# 街头骂架的通用升级键：说这句话的时候，双方都知道下一步是动手。
+roles:
+  he:
+    name: 逼近
+    voice: adult_male
+    mood: 用压低声音、一字一顿、盯着对方眼睛的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 给对方一个收回去的机会，也是最后一个
+    speakerRole: he

@@ -1,0 +1,41 @@
+id: square-dance
+title: 楼下的音响
+situation: 晚上九点半，楼下广场舞的音响还开得震天响。你下楼了。
+
+# 这一场的乐趣在于双方都觉得自己占理：一个说孩子要上学，一个说老年人锻炼
+# 身体犯什么法。谁也没错，所以谁也不让——最好的吵架都长这样。
+roles:
+  resident:
+    name: 楼上住户
+    voice: adult_male
+    mood: 用先客气、被顶了之后忍不住的口气说
+  leader:
+    name: 领舞的
+    voice: adult_female
+    mood: 用理直气壮、见怪不怪、还带点看不上年轻人的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 下楼好言相劝，请对方关小点
+    speakerRole: resident
+  - id: b2
+    order: 2
+    intent: 不以为然——公共场所，我们跳我们的
+    speakerRole: leader
+  - id: b3
+    order: 3
+    intent: 搬出规定——几点了，扰民是犯法的
+    speakerRole: resident
+  - id: b4
+    order: 4
+    intent: 反击——老年人锻炼身体碍着谁了
+    speakerRole: leader
+  - id: b5
+    order: 5
+    intent: 放话报警
+    speakerRole: resident
+  - id: b6
+    order: 6
+    intent: 音乐没停，反而更大声了
+    speakerRole: none

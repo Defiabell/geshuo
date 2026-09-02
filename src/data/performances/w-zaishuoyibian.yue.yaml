@@ -1,0 +1,12 @@
+id: w-zaishuoyibian.yue
+sceneId: w-zaishuoyibian
+dialectId: yue
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你再讲多次啊？
+    textMandarin: 你再说一遍啊？
+    note: 讲多次＝再说一遍（粤语用「多」表示再来一次，不说「再一遍」）。
+    audio: /audio/w-zaishuoyibian.yue/b1.mp3
+    durationMs: 1360

@@ -1,0 +1,40 @@
+id: square-dance.dongbei
+sceneId: square-dance
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 大姨，都九点半了，音响小点儿行不？我家孩子明儿还上学呢。
+    textMandarin: 大姨，都九点半了，音响小点行不行？我家孩子明天还上学呢。
+    note: 「行不」是东北话把「行不行」缩掉一半的说法，听着比全说更随和。
+    audio: /audio/square-dance.dongbei/b1.mp3
+    durationMs: 6192
+  - beatId: b2
+    textDialect: 咋地？这是公共地方，我们跳我们的，碍着你啥事了？
+    textMandarin: 怎么？这是公共场所，我们跳我们的，碍着你什么事了？
+    note: 又是「咋地」——东北话里这两个字一出口，说明对方已经准备呛人了。
+    audio: /audio/square-dance.dongbei/b2.mp3
+    durationMs: 4704
+  - beatId: b3
+    textDialect: 公共地方也得有个点儿吧？十点以后扰民犯法，你不知道？
+    textMandarin: 公共场所也得有个时间吧？十点以后扰民犯法，你不知道？
+    note: 有个点儿＝有个时间界限，跟冀鲁官话说法一致——两地相邻，这类词是共享的。
+    audio: /audio/square-dance.dongbei/b3.mp3
+    durationMs: 5400
+  - beatId: b4
+    textDialect: 哟，还跟我唠上法了？我们老太太锻炼身体碍着谁了？你年轻轻的火气老大了！
+    textMandarin: 哟，还跟我说起法律了？我们老太太锻炼身体碍着谁了？你年纪轻轻火气这么大！
+    note: 唠＝说/聊（东北话高频动词），老大了＝非常大（「老…了」是东北话的程度结构）。
+    audio: /audio/square-dance.dongbei/b4.mp3
+    durationMs: 6384
+  - beatId: b5
+    textDialect: 行，你们接着跳。我这就打一一〇，看是你音响响还是警车响。
+    textMandarin: 行，你们接着跳。我这就打110，看是你音响响还是警车响。
+    note: 这一拍四个方言几乎一样——真要动手的时候，所有人都会把话说得又平又清楚。
+    audio: /audio/square-dance.dongbei/b5.mp3
+    durationMs: 5304
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 音乐没停，反而更大声了。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。

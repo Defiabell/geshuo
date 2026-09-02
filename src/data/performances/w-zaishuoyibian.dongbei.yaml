@@ -1,0 +1,12 @@
+id: w-zaishuoyibian.dongbei
+sceneId: w-zaishuoyibian
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你再说一遍我听听？
+    textMandarin: 你再说一遍我听听？
+    note: 「我听听」表面是请求，实际是最后通牒。东北话把狠话说得像客气话，是它的特点。
+    audio: /audio/w-zaishuoyibian.dongbei/b1.mp3
+    durationMs: 1944

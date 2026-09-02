@@ -1,0 +1,41 @@
+id: scrape
+title: 剐蹭
+situation: 早高峰，变道没打灯，两车蹭上了。两边都下了车，后面的喇叭已经响起来了。
+
+# 街头骂架是方言火力最足的场合：没人还端着，也没人顾体面。
+# 剐蹭又是其中最普遍的一种——全国每天都在发生，每个人都见过。
+roles:
+  a:
+    name: 被蹭的
+    voice: adult_male
+    mood: 用刚下车、火冒三丈、音量很大、几乎是吼的口气说
+  b:
+    name: 蹭人的
+    voice: adult_female
+    mood: 用死不认账、越说越横、带着挑衅的口气说
+
+beats:
+  - id: b1
+    order: 1
+    intent: 一下车就开骂——你会不会开车
+    speakerRole: a
+  - id: b2
+    order: 2
+    intent: 死不认账，反说是对方贴上来的
+    speakerRole: b
+  - id: b3
+    order: 3
+    intent: 亮证据——行车记录仪拍着呢
+    speakerRole: a
+  - id: b4
+    order: 4
+    intent: 耍赖——有本事你报警啊
+    speakerRole: b
+  - id: b5
+    order: 5
+    intent: 彻底豁出去，今天就耗着
+    speakerRole: a
+  - id: b6
+    order: 6
+    intent: 后面的喇叭响成一片
+    speakerRole: none

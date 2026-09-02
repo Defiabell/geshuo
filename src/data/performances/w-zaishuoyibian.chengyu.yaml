@@ -1,0 +1,12 @@
+id: w-zaishuoyibian.chengyu
+sceneId: w-zaishuoyibian
+dialectId: chengyu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你娃再说一遍嘛？
+    textMandarin: 你小子再说一遍？
+    note: 你娃＝你小子（川渝对年轻男性的称呼，吵架时带轻蔑）。句末「嘛」把逼问说得慢悠悠的，更瘆人。
+    audio: /audio/w-zaishuoyibian.chengyu/b1.mp3
+    durationMs: 1280

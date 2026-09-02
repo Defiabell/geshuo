@@ -1,0 +1,12 @@
+id: w-zaishuoyibian.jilu
+sceneId: w-zaishuoyibian
+dialectId: jilu
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 恁再说一遍试试？
+    textMandarin: 你再说一遍试试？
+    note: 恁＝你。加「试试」是把威胁摊开——不是想再听一遍，是等你不敢说。
+    audio: /audio/w-zaishuoyibian.jilu/b1.mp3
+    durationMs: 3024

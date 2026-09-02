@@ -1,0 +1,40 @@
+id: scrape.dongbei
+sceneId: scrape
+dialectId: dongbei
+source: tts
+verification: unverified
+lines:
+  - beatId: b1
+    textDialect: 你会不会开车啊？变道不打灯，你那俩眼睛是出气的？
+    textMandarin: 你会不会开车？变道不打灯，你那两只眼睛是用来出气的？
+    note: 东北官话与普通话最接近，火气全在语调上——这一句念出来的冲劲比字面大得多。
+    audio: /audio/scrape.dongbei/b1.mp3
+    durationMs: 4752
+  - beatId: b2
+    textDialect: 咋地？我早就在这道跑着呢，是你自己往上贴的，别赖我。
+    textMandarin: 怎么？我早就在这条道上开着呢，是你自己贴上来的，别赖我。
+    note: 咋地＝怎么样，是东北话挑衅的起手式，跟「你瞅啥」是一套的。
+    audio: /audio/scrape.dongbei/b2.mp3
+    durationMs: 5328
+  - beatId: b3
+    textDialect: 别扯犊子了，我车上记录仪拍着呢，一调出来看谁没理。
+    textMandarin: 别废话了，我车上行车记录仪拍着呢，一调出来看谁没理。
+    note: 扯犊子＝废话/胡扯，几乎是东北话的身份证词。
+    audio: /audio/scrape.dongbei/b3.mp3
+    durationMs: 5064
+  - beatId: b4
+    textDialect: 拍着又咋地？有能耐你报警去啊，我还怕你咋的？
+    textMandarin: 拍着又怎样？有本事你报警去啊，我还怕你不成？
+    note: 有能耐＝有本事。句末「咋的」是东北官话质问句的常见收尾。
+    audio: /audio/scrape.dongbei/b4.mp3
+    durationMs: 4368
+  - beatId: b5
+    textDialect: 报就报！我今儿还就不走了，看你个瘪犊子能耗到啥时候！
+    textMandarin: 报就报！我今天还就不走了，看你这混蛋能耗到什么时候！
+    note: 瘪犊子＝东北话最有代表性的骂词，比「熊玩意儿」重，比「王八犊子」轻。
+    audio: /audio/scrape.dongbei/b5.mp3
+    durationMs: 6360
+  - beatId: b6
+    textDialect: ——
+    textMandarin: 后面的喇叭响成一片。
+    note: 骨架里保留一个空拍。所有方言的沉默都一样。
