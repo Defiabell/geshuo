@@ -5,6 +5,7 @@ import DialectChips from '../../../components/DialectChips.astro';
 import GrainNotice from '../../../components/GrainNotice.astro';
 import LineCard from '../../../components/LineCard.astro';
 import { loadDialects } from '../../../lib/dialect-tree';
+import { colorFor } from '../../../lib/palette';
 import { loadScenes, loadPerformances, validateContent } from '../../../lib/content';
 
 export async function getStaticPaths() {
@@ -67,7 +68,13 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((beat) => (
-        <LineCard beat={beat} line={lineOf(beat.id)} verification={performance.verification} />
+        <LineCard
+          beat={beat}
+          line={lineOf(beat.id)}
+          verification={performance.verification}
+          color={colorFor(dialect)}
+          human={performance.source === 'human'}
+        />
       ))}
   </div>
 </Base>
@@ -85,7 +92,7 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
   }
   .home:hover { color: var(--cut-lit); }
   h1 {
-    font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px);
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px);
     color: var(--cut); margin: 14px 0 8px; letter-spacing: .04em; line-height: 1.1;
   }
   .situation { margin: 0; font-size: 16px; color: var(--ink-2); max-width: 36em; }

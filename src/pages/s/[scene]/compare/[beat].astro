@@ -4,6 +4,7 @@ import Base from '../../../../layouts/Base.astro';
 import { loadDialects, levelLabel } from '../../../../lib/dialect-tree';
 import { loadScenes, loadPerformances, linesForBeat } from '../../../../lib/content';
 import { chainSeconds } from '../../../../lib/audio';
+import { colorFor } from '../../../../lib/palette';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../../../../lib/verification';
 
 export async function getStaticPaths() {
@@ -35,11 +36,15 @@ export async function getStaticPaths() {
         props: {
           scene,
           beat,
-          columns: linesForBeat(forScene, scene.id, beat.id).map(({ performance, line }) => ({
-            dialect: dialects.get(performance.dialectId)!,
-            performance,
-            line,
-          })),
+          // 按纬度从北到南排。配色也是按纬度给的（src/lib/palette.ts），
+          // 两者一致时整排列头读起来就是一条从青到赭的色带，而不是四块随机颜色。
+          columns: linesForBeat(forScene, scene.id, beat.id)
+            .map(({ performance, line }) => ({
+              dialect: dialects.get(performance.dialectId)!,
+              performance,
+              line,
+            }))
+            .sort((a, b) => (b.dialect.lat ?? -90) - (a.dialect.lat ?? -90)),
         },
       });
     }
@@ -68,6 +73,20 @@ const totalSeconds = chainSeconds(columns.map((c) => c.line));
 const grainHeadline = allTts
   ? `以下均为 AI 合成语音，标注的是方言${levelPhrase}，不代表任何具体县市。`
   : `除真人录音列外，以下 AI 合成语音标注的是方言${levelPhrase}，不代表任何具体县市。`;
+
+// 时间轴分段：按真实时长切分（借自方向 B）。这条比「共 24 秒」有用得多——
+// 一眼能看出粤语最短、成渝最长，而那本身就是方言差异的一部分。
+const playable = columns.filter((c) => c.line.audio && c.line.durationMs !== undefined);
+const hasTimeline = playable.length > 1 && playable.length === columns.filter((c) => c.line.audio).length;
+
+// 用词完全相同的列只展示一次台词。
+// 真人录音确认「AI 那句就是我说的」时（accept 里的「同ai」），两列会一字不差，
+// 并排放着像 bug。但这件事本身是有信息量的——它说明那份 AI 台词被本地人认了，
+// 所以不是隐藏，是明说。
+const enriched = columns.map((c, i) => {
+  const same = columns.findIndex((x) => x.line.textDialect === c.line.textDialect);
+  return { ...c, sameAs: same < i ? columns[same].dialect.name : null };
+});
 ---
 <Base title={`${scene.title} · 第 ${beat.order} 拍横着听 — 各说各话`}>
   <header class="top">
@@ -112,21 +131,37 @@ const grainHeadline = allTts
     </div>
   )}
 
+  {hasTimeline && (
+    <div class="timeline" aria-hidden="true">
+      {playable.map(({ dialect, line }) => (
+        <i
+          style={`flex:${line.durationMs};--c:${colorFor(dialect, 42)}`}
+          title={`${dialect.name} ${(line.durationMs! / 1000).toFixed(1)} 秒`}
+        ><b>{dialect.name}</b><em>{(line.durationMs! / 1000).toFixed(1)}s</em></i>
+      ))}
+    </div>
+  )}
+
   <div class="compare" id="compare">
-    {columns.map(({ dialect, performance, line }) => (
-      <div class="col" data-audio={line.audio ?? ''}>
-        <h2>
-          {dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span>
-          {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
-        </h2>
-        <p class="said">{line.textDialect}</p>
-        <p class="trans">{line.textMandarin}</p>
-        {line.note && <p class="gloss">{line.note}</p>}
-        <span class={`tag ${VERIFICATION_TAG_CLASS[performance.verification]}`}>
-          {VERIFICATION_LABELS[performance.verification]}
-        </span>
-      </div>
-    ))}
+    {enriched.map(({ dialect, performance, line, sameAs }) => {
+      const human = performance.source === 'human';
+      return (
+        <div class={`col ${human ? 'real' : 'ai'}`} data-audio={line.audio ?? ''} style={`--c:${colorFor(dialect)}`}>
+          <h2>
+            <span class="nm">{dialect.name}</span>
+            <span class="lv2">{levelLabel(dialect.level)} · {human ? '真人' : 'AI'}</span>
+            {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
+          </h2>
+          <p class={`said ${human ? 'grain-real' : 'grain-ai'}`}>{line.textDialect}</p>
+          {sameAs && <p class="same">用词与{sameAs}一字不差——这一句是本地人认下来的，差别在发音里</p>}
+          <p class="trans">{line.textMandarin}</p>
+          {line.note && <p class="gloss">{line.note}</p>}
+          <span class={`tag ${VERIFICATION_TAG_CLASS[performance.verification]}`}>
+            {VERIFICATION_LABELS[performance.verification]}
+          </span>
+        </div>
+      );
+    })}
   </div>
 </Base>
 
@@ -138,66 +173,104 @@ const grainHeadline = allTts
 
 <style>
   .top { padding: 56px 0 8px; }
-  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home { font-family: var(--font-ui); font-size: 12px; color: var(--dust); text-decoration: none; letter-spacing: .14em; }
   .home:hover { color: var(--cut-lit); }
-  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(30px, 5vw, 46px); color: var(--cut); margin: 14px 0 8px; }
-  .situation { margin: 0 0 26px; font-size: 15px; color: var(--ink-2); }
-  .beats { display: flex; gap: 6px; margin-bottom: 22px; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4.4vw, 40px); color: var(--ink); margin: 16px 0 6px; letter-spacing: .02em; }
+  .situation { margin: 0 0 26px; font-size: 14px; color: var(--ink-2); }
+
+  .beats { display: flex; gap: 6px; margin-bottom: 20px; }
   .beats a {
-    font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .1em;
+    font-family: var(--font-ui); font-size: 12px; letter-spacing: .1em;
     padding: 6px 12px; border: 1px solid var(--rule); color: var(--dust);
-    text-decoration: none; border-radius: 2px;
+    text-decoration: none; border-radius: 1px;
   }
-  .beats a:hover { border-color: var(--cut); color: var(--cut-lit); }
-  .beats a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .beats a[aria-current="page"] { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
+  .beats a:hover { border-color: var(--ink-2); color: var(--ink); }
+  .beats a:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+  .beats a[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--night); }
+
+  /* 免责声明降级：它是免责声明，不该比台词还抢眼 */
   .grain {
-    display: flex; gap: 14px; align-items: flex-start;
-    background: var(--night-2); border: 1px solid var(--rule); border-left: 3px solid var(--cut);
-    padding: 14px 18px; margin: 0 0 24px; border-radius: 2px;
+    display: flex; gap: 16px; align-items: baseline; justify-content: space-between;
+    border-top: 1px solid var(--rule); padding: 11px 0 0; margin: 0 0 18px;
   }
-  .grain p { margin: 0; font-size: 14px; color: var(--ink-2); }
-  .grain.loose { border-left-color: var(--dust); }
-  .grain.loose strong { color: var(--dust); }
-  .grain strong { color: var(--cut-lit); font-weight: 600; }
+  .grain p { margin: 0; font-family: var(--font-ui); font-size: 12px; color: var(--dust); line-height: 1.7; }
+  .grain strong { color: var(--ink-2); font-weight: 500; }
+  .grain.loose { border-top-style: dashed; }
   .cta {
-    font-family: "Noto Sans SC", sans-serif; font-size: 13px; white-space: nowrap;
-    align-self: center; text-decoration: none;
-    border: 1px solid var(--cut); color: var(--cut-lit); padding: 8px 14px; border-radius: 2px;
-    transition: background .2s, color .2s;
+    font-family: var(--font-ui); font-size: 12.5px; white-space: nowrap; text-decoration: none;
+    color: var(--cut-lit); border-bottom: 1px solid var(--rule); padding-bottom: 2px;
   }
-  .cta:hover { background: var(--cut); color: #FFF6E8; }
-  .cta:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .bar { display: flex; gap: 14px; align-items: center; margin: 0 0 18px; flex-wrap: wrap; }
+  .cta:hover { border-bottom-color: var(--cut-lit); }
+  .cta:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+
+  /* 红只留给「正在响」和这个主按钮，整页红色出现次数屈指可数 */
+  .bar { display: flex; gap: 16px; align-items: center; margin: 22px 0 12px; flex-wrap: wrap; }
   .btn-chain {
-    font-family: "Noto Sans SC", sans-serif; font-size: 14px; cursor: pointer;
-    background: var(--cut); color: #FFF6E8; border: none;
-    padding: 12px 24px; border-radius: 2px; transition: background .2s;
+    font-family: var(--font-ui); font-size: 14px; cursor: pointer;
+    background: var(--ink); color: var(--night); border: none;
+    padding: 12px 24px; border-radius: 1px; transition: background .2s;
   }
-  .btn-chain:hover { background: var(--cut-lit); }
-  .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
-  .bar-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .btn-chain:hover { background: var(--live); }
+  .btn-chain:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+  .bar-hint { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); }
+
+  /* 时间轴：按真实时长切分。哪个方言把同一句话说得更长，一眼可见 */
+  .timeline { display: flex; gap: 2px; margin: 0 0 26px; }
+  .timeline i {
+    height: 30px; background: color-mix(in srgb, var(--c) 30%, var(--night));
+    border-top: 2px solid var(--c); position: relative; overflow: hidden;
+    display: flex; align-items: center; gap: 7px; padding-left: 9px; min-width: 0;
+  }
+  .timeline i b, .timeline i em {
+    font-family: var(--font-ui); font-style: normal; font-weight: 500;
+    font-size: 10.5px; letter-spacing: .06em; color: var(--c); white-space: nowrap;
+  }
+  .timeline i em { opacity: .7; font-variant-numeric: tabular-nums; }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 30px; }
+  .col { --c: var(--ink-2); display: flex; flex-direction: column; }
+  .col h2 {
+    font-family: var(--font-ui); font-size: 12px; margin: 0 0 15px; letter-spacing: .1em;
+    color: var(--c); font-weight: 500; padding-bottom: 8px;
+    border-bottom: 2px solid var(--c); display: flex; align-items: baseline; gap: 8px;
+  }
+  .col.ai h2 { border-bottom-style: dashed; opacity: .82; }
+  .col.real h2 { border-bottom-width: 3px; }
+  .nm { flex: 1; }
+  .lv2 { font-size: 10.5px; color: var(--dust); letter-spacing: .08em; }
   .one {
-    font-size: 11px; line-height: 1; cursor: pointer; margin-left: 8px;
-    background: transparent; border: 1px solid var(--rule); color: var(--cut);
-    width: 22px; height: 22px; border-radius: 50%; padding: 0;
+    font-size: 10px; line-height: 1; cursor: pointer; padding: 0;
+    background: transparent; border: 1px solid var(--rule); color: var(--c);
+    width: 20px; height: 20px; border-radius: 50%; flex: none;
     transition: background .18s, color .18s, border-color .18s;
   }
-  .one:hover { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
-  .one:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  /* 连听时当前列亮起来——不然四条连着放完，听的人不知道刚才那句是哪儿的 */
-  .col.on { border-color: var(--cut); background: var(--paper); }
-  .col.on h2 { color: var(--cut-lit); }
-  @media (prefers-reduced-motion: reduce) { .btn-chain, .one, .col { transition: none; } }
-  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px; }
-  .col { background: var(--night-2); border: 1px solid var(--rule); padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
-  .col h2 { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 0; letter-spacing: .1em; color: var(--ink-2); font-weight: 500; }
-  .lv2 { font-size: 11px; color: var(--dust); letter-spacing: .1em; }
-  .said { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(19px, 2.6vw, 23px); color: var(--cut); margin: 4px 0 2px; line-height: 1.5; }
-  .trans { font-size: 13.5px; color: var(--ink-2); margin: 0; }
-  .gloss { font-size: 13px; color: var(--dust); margin: 0; border-left: 2px solid var(--rule); padding-left: 10px; }
-  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .08em; padding: 4px 9px; border-radius: 2px; align-self: flex-start; }
-  .tag.unver { background: rgba(183,36,31,.12); color: var(--cut-lit); border: 1px solid rgba(183,36,31,.35); }
-  .tag.verified { background: rgba(154,132,97,.16); color: var(--dust); border: 1px solid rgba(154,132,97,.45); }
-  .tag.human { background: rgba(78,122,62,.14); color: #4E7A3E; border: 1px solid rgba(78,122,62,.4); }
+  .one:hover { background: var(--c); border-color: var(--c); color: var(--night); }
+  .one:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+
+  /* 虚实语法：AI 的字发虚偏灰，真人的字锐利色实 */
+  .said {
+    font-family: var(--font-display); font-size: clamp(18px, 2.1vw, 22px);
+    line-height: 1.62; margin: 0 0 12px; letter-spacing: .01em; color: var(--c);
+  }
+  .col.ai .said { color: color-mix(in srgb, var(--c) 60%, var(--dust)); }
+  .same {
+    font-family: var(--font-ui); font-size: 11.5px; color: var(--dust);
+    margin: -4px 0 12px; padding-left: 10px; border-left: 2px solid var(--rule); line-height: 1.7;
+  }
+  .trans { font-size: 13.5px; color: var(--ink-2); margin: 0 0 12px; line-height: 1.75; }
+  /* 注释升格：这是这个站独有的价值，给它悬挂缩进，不再压成灰色小字 */
+  .gloss {
+    font-family: var(--font-ui); font-size: 12.5px; color: var(--ink-2); margin: 0;
+    padding-left: 14px; text-indent: -14px; line-height: 1.85;
+  }
+  .tag {
+    font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .09em;
+    margin-top: 16px; color: var(--dust); align-self: flex-start;
+  }
+  .tag.human { color: var(--c); font-weight: 500; }
+
+  /* 连听时当前列亮起来——四条连着放完，得知道刚才那句是哪儿的 */
+  .col.on .said { color: var(--c); opacity: 1; text-shadow: none; }
+  .col.on h2 { opacity: 1; border-bottom-color: var(--live); }
+  .col.on .lv2 { color: var(--live); }
 </style>

@@ -1,48 +1,73 @@
+/*
+ * 设计令牌 —— 方向 A「实与虚」。
+ *
+ * 这一版的主张只有一条：**把地图上那套「模糊＝AI 猜的，清晰＝真人说的」
+ * 升格成全站语法**。虚实不是装饰，它就是这个项目「AI 只到区级」那条诚实
+ * 标注的视觉形态——别的站抄不走，因为别的站没有这个问题。
+ *
+ * 三条随之而来的规矩：
+ * 1. **红只留给「正在响的那一个」**（--live）。以前红既是标题又是台词又是
+ *    警示条又是按钮，全都重要等于没有重点。现在标题和强调一律墨色。
+ * 2. **方言的颜色来自地理**（见 src/lib/palette.ts）：纬度定色相，层级定
+ *    饱和度——层级越细，颜色越实，正好和虚实语法同向。
+ * 3. **免责声明降级**。它是免责声明，不该比台词还抢眼。
+ */
 :root {
-  --night: #F7EFDD;
-  --night-2: #FFFAF0;
-  --paper: #FFFDF6;
-  --cut: #B7241F;
-  --cut-lit: #D33B27;
-  --ink: #2A1E14;
-  --ink-2: #6B5540;
-  --dust: #9A8461;
-  --rule: #E0CFA8;
+  --night: #EFEDE6;   /* 页面底：偏冷的纸白，不再是暖米黄 */
+  --night-2: #F6F4EE; /* 浅块 */
+  --paper: #FBFAF6;   /* 最亮 */
+  --ink: #1A1714;     /* 正文 */
+  --ink-2: #5C554B;   /* 次要正文 */
+  --dust: #9C948A;    /* 最弱：注释、元信息 */
+  --rule: #DCD7CB;    /* 线 */
+
+  /* 原来是「中国红」，现在是墨色。改名字会牵动十三个文件，改值一次到位。 */
+  --cut: #2A241E;
+  --cut-lit: #8E5334; /* 悬停／链接：赭，暖但不是红 */
+
+  /* 只给「正在响」和主 CTA。整个站上红色出现的次数应该屈指可数。 */
+  --live: #B7241F;
+
   --frame: #6B4A2E;
   --glow: transparent;
   --body-fg: var(--ink);
+
+  --font-display: "Noto Serif SC", "Songti SC", serif;
+  --font-ui: "Noto Sans SC", -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --night: #16110D;
-    --night-2: #201811;
-    --paper: #EFDDB0;
-    --cut: #A81E1A;
-    --cut-lit: #E0512F;
-    --ink: #2A1E14;
-    --ink-2: #C9B48A;
-    --dust: #8A7454;
-    --rule: #33261A;
+    --night: #14120F;
+    --night-2: #1C1915;
+    --paper: #23201A;
+    --ink: #E9E3D6;
+    --ink-2: #B3AA9C;
+    --dust: #7C7468;
+    --rule: #332D25;
+    --cut: #E9E3D6;
+    --cut-lit: #C89A6B;
+    --live: #E0512F;
     --frame: #3A2717;
     --glow: rgba(239, 221, 176, .2);
-    --body-fg: var(--ink-2);
+    --body-fg: var(--ink);
   }
 }
 
 :root[data-theme="dark"] {
-  --night: #16110D;
-  --night-2: #201811;
-  --paper: #EFDDB0;
-  --cut: #A81E1A;
-  --cut-lit: #E0512F;
-  --ink: #2A1E14;
-  --ink-2: #C9B48A;
-  --dust: #8A7454;
-  --rule: #33261A;
+  --night: #14120F;
+  --night-2: #1C1915;
+  --paper: #23201A;
+  --ink: #E9E3D6;
+  --ink-2: #B3AA9C;
+  --dust: #7C7468;
+  --rule: #332D25;
+  --cut: #E9E3D6;
+  --cut-lit: #C89A6B;
+  --live: #E0512F;
   --frame: #3A2717;
   --glow: rgba(239, 221, 176, .2);
-  --body-fg: var(--ink-2);
+  --body-fg: var(--ink);
 }
 
 * { box-sizing: border-box; }
@@ -52,8 +77,30 @@ body {
   padding: 0 20px 96px;
   background: var(--night);
   color: var(--body-fg);
-  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-display);
   line-height: 1.75;
 }
 
-.wrap { max-width: 940px; margin: 0 auto; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+/*
+ * ── 虚实语法 ────────────────────────────────────────────────────
+ * AI 生成的台词边缘发虚、色偏灰；真人录音的字锐利、色实。
+ * 不用读标签，眼睛先告诉你哪个是真的。
+ *
+ * 放在全局而不是各组件里：场景页、对比页、一句话页都要用同一套，
+ * 各写各的必然走样。
+ */
+.grain-ai {
+  opacity: .86;
+  text-shadow: 0 0 .55px currentColor;
+}
+.grain-real {
+  opacity: 1;
+  text-shadow: none;
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

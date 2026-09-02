@@ -101,7 +101,7 @@ const cards = Array.from(scenes.values())
 <style>
   .top { padding: 64px 0 24px; display: flex; flex-direction: column; gap: 14px; }
   .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); }
-  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(44px, 8vw, 76px); line-height: 1; color: var(--cut); letter-spacing: .04em; margin: 0; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(44px, 8vw, 76px); line-height: 1; color: var(--cut); letter-spacing: .04em; margin: 0; }
   .tagline { font-size: 17px; color: var(--ink-2); max-width: 34em; margin: 0; }
   /* 剪纸窗撤掉后这里原本的 64px 会留出一个明显的空洞——上面没东西了，不需要那么大的隔断 */
   section { padding-top: 32px; }
@@ -124,13 +124,13 @@ const cards = Array.from(scenes.values())
   .wk:hover { border-color: var(--cut); transform: translateY(-2px); }
   .wk:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
   .wk-eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .2em; color: var(--dust); }
-  .wk-title { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(30px, 5vw, 44px); color: var(--cut); margin: 8px 0 16px; }
+  .wk-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); color: var(--cut); margin: 8px 0 16px; }
   .wk-lines { display: flex; flex-direction: column; gap: 6px; }
   .wk-line { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
   .wk-name { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--dust); letter-spacing: .08em; min-width: 5.5em; }
   .wk-said { font-size: 17px; color: var(--ink-2); }
   .wk-cta { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--cut-lit); margin: 18px 0 0; }
-  h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px; }
   .card {
     background: var(--night-2); border: 1px solid var(--rule); padding: 24px 22px;
@@ -139,7 +139,7 @@ const cards = Array.from(scenes.values())
   }
   .card:hover { border-color: var(--cut); transform: translateY(-2px); }
   .card:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .card h3 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 24px; color: var(--cut); margin: 0; }
+  .card h3 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--cut); margin: 0; }
   .sit { font-size: 14.5px; color: var(--ink-2); margin: 0; }
   .meta { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); margin: 0; letter-spacing: .06em; }
   footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--rule); }

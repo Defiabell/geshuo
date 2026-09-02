@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import { loadDialects, levelLabel } from '../lib/dialect-tree';
 import { loadScenes, loadPerformances, validateContent } from '../lib/content';
 import { project } from '../lib/geo';
+import { colorFor } from '../lib/palette';
 import outline from '../data/china-outline.json';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
@@ -38,6 +39,7 @@ const withPerf = Array.from(dialects.values())
       cy,
       human,
       r: BLUR_R[x.dialect.level] ?? 3,
+      color: colorFor(x.dialect, 46),
       href: `/s/${x.performances[0].sceneId}/${x.dialect.id}/`,
     };
   });
@@ -78,23 +80,25 @@ const INSET_VB = `${ix0} ${iy0} ${(ix1 - ix0).toFixed(2)} ${(iy1 - iy0).toFixed(
   <div class="mapwrap">
     <svg class="map" viewBox={MAIN_VB} role="img" aria-label="中国方言分布示意图">
       <defs>
-        <radialGradient id="halo">
-          <stop offset="0%" stop-color="var(--cut)" stop-opacity="0.55" />
-          <stop offset="55%" stop-color="var(--cut)" stop-opacity="0.18" />
-          <stop offset="100%" stop-color="var(--cut)" stop-opacity="0" />
-        </radialGradient>
+        {withPerf.filter((w) => !w.human).map((w) => (
+          <radialGradient id={`halo-${w.dialect.id}`}>
+            <stop offset="0%" stop-color={w.color} stop-opacity="0.5" />
+            <stop offset="55%" stop-color={w.color} stop-opacity="0.16" />
+            <stop offset="100%" stop-color={w.color} stop-opacity="0" />
+          </radialGradient>
+        ))}
       </defs>
       <path class="outline" d={outline.path} />
       {withPerf.filter((w) => !w.human).map((w) => (
         <a href={w.href} aria-label={`${w.dialect.name}（AI 合成，${levelLabel(w.dialect.level)}）`}>
-          <circle class="halo" cx={w.cx} cy={w.cy} r={w.r} fill="url(#halo)" />
+          <circle class="halo" cx={w.cx} cy={w.cy} r={w.r} fill={`url(#halo-${w.dialect.id})`} />
           <text class="lbl" x={w.cx} y={w.cy + w.r * 0.62 + 1.3}>{w.dialect.name}</text>
         </a>
       ))}
       {withPerf.filter((w) => w.human).map((w) => (
         <a href={w.href} aria-label={`${w.dialect.name}（真人录音）`}>
-          <circle class="pin" cx={w.cx} cy={w.cy} r="0.55" />
-          <text class="lbl real" x={w.cx} y={w.cy - 1.4}>{w.dialect.name}</text>
+          <circle class="pin" cx={w.cx} cy={w.cy} r="0.55" style={`fill:${w.color}`} />
+          <text class="lbl real" x={w.cx} y={w.cy - 1.4} style={`fill:${w.color}`}>{w.dialect.name}</text>
         </a>
       ))}
       {blanks.map((b) => (
@@ -141,7 +145,7 @@ const INSET_VB = `${ix0} ${iy0} ${(ix1 - ix0).toFixed(2)} ${(iy1 - iy0).toFixed(
   .top { padding: 56px 0 8px; }
   .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
   .home:hover { color: var(--cut-lit); }
-  h1 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
   .lede { max-width: 36em; margin: 0; color: var(--ink-2); font-size: 15.5px; }
   .lede strong { color: var(--cut-lit); }
 
@@ -153,14 +157,14 @@ const INSET_VB = `${ix0} ${iy0} ${(ix1 - ix0).toFixed(2)} ${(iy1 - iy0).toFixed(
   .map { width: 100%; max-width: 900px; height: auto; display: block; margin: 0 auto; }
   .outline { fill: var(--night-2); stroke: var(--rule); stroke-width: 0.12; }
   .halo { pointer-events: auto; }
-  .pin { fill: var(--cut); stroke: var(--paper); stroke-width: 0.15; }
+  .pin { fill: var(--ink); stroke: var(--night); stroke-width: 0.16; }
   .blank { fill: none; stroke: var(--dust); stroke-width: 0.14; stroke-dasharray: 0.3 0.3; }
   .lbl {
     font-family: "Noto Sans SC", sans-serif; font-size: 1.5px; fill: var(--ink-2);
     text-anchor: middle; letter-spacing: .08em; paint-order: stroke;
     stroke: var(--night); stroke-width: 0.35px;
   }
-  .lbl.real { fill: var(--cut); font-weight: 600; }
+  .lbl.real { fill: var(--ink); font-weight: 600; }
   .lbl.faint { fill: var(--dust); }
   .lbl.start { text-anchor: start; }
   .map a:hover .halo { opacity: .75; }
@@ -169,12 +173,12 @@ const INSET_VB = `${ix0} ${iy0} ${(ix1 - ix0).toFixed(2)} ${(iy1 - iy0).toFixed(
   .legend { display: flex; gap: 22px; flex-wrap: wrap; font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); margin-bottom: 34px; }
   .lg { display: inline-flex; align-items: center; gap: 7px; }
   .sw { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
-  .sw.halo { background: radial-gradient(var(--cut) 0%, rgba(183,36,31,.18) 55%, transparent 100%); }
-  .sw.pin { background: var(--cut); width: 7px; height: 7px; }
+  .sw.halo { background: radial-gradient(hsl(142 28% 42%) 0%, hsl(142 28% 42% / .18) 55%, transparent 100%); }
+  .sw.pin { background: var(--ink); width: 7px; height: 7px; }
   .sw.blank { border: 1px dashed var(--dust); width: 9px; height: 9px; }
 
   .ask { border-top: 1px solid var(--rule); padding-top: 26px; max-width: 36em; }
-  .ask h2 { font-family: "ZCOOL QingKe HuangYou", serif; font-size: 26px; color: var(--cut); margin: 0 0 10px; }
+  .ask h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--cut); margin: 0 0 10px; }
   .ask p { color: var(--ink-2); margin: 0 0 16px; }
   .ask strong { color: var(--cut-lit); }
   .cta {

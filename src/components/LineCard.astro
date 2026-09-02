@@ -1,11 +1,11 @@
 ---
 import type { Beat, PerformanceLine, Verification } from '../lib/types';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
-interface Props { beat: Beat; line: PerformanceLine; verification: Verification }
-const { beat, line, verification } = Astro.props;
+interface Props { beat: Beat; line: PerformanceLine; verification: Verification; color?: string; human?: boolean }
+const { beat, line, verification, color = 'var(--ink-2)', human = false } = Astro.props;
 const order = String(beat.order).padStart(2, '0');
 ---
-<div class="line" data-beat={beat.id} data-who={beat.speakerRole} data-audio={line.audio ?? ''}>
+<div class={`line ${human ? 'real' : 'ai'}`} data-beat={beat.id} data-who={beat.speakerRole} data-audio={line.audio ?? ''} style={`--c:${color}`}>
   <div>
     <div class="beat">{order}<br />{beat.intent}</div>
     {line.audio ? (
@@ -19,7 +19,7 @@ const order = String(beat.order).padStart(2, '0');
     )}
   </div>
   <div>
-    <p class="said">{line.textDialect}</p>
+    <p class={`said ${human ? 'grain-real' : 'grain-ai'}`}>{line.textDialect}</p>
     <p class="trans">{line.textMandarin}</p>
     {line.note && <p class="gloss">{line.note}</p>}
     <div class="row-foot">
@@ -31,43 +31,51 @@ const order = String(beat.order).padStart(2, '0');
 
 <style>
   .line {
-    display: grid; grid-template-columns: 96px 1fr; gap: 20px;
-    padding: 22px 20px; border-bottom: 1px solid var(--rule);
+    --c: var(--ink-2);
+    display: grid; grid-template-columns: 92px 1fr; gap: 22px;
+    padding: 24px 0; border-bottom: 1px solid var(--rule);
     transition: background .35s ease;
   }
-  .line.active { background: var(--night-2); }
+  .line.active { background: var(--paper); box-shadow: -14px 0 0 var(--paper), 14px 0 0 var(--paper); }
   .beat {
-    font-family: "Noto Sans SC", sans-serif; font-size: 11px; letter-spacing: .14em;
-    color: var(--dust); padding-top: 8px; line-height: 1.6;
+    font-family: var(--font-ui); font-size: 11px; letter-spacing: .12em;
+    color: var(--dust); padding-top: 6px; line-height: 1.7;
   }
-  .line.active .beat { color: var(--cut-lit); }
+  .line.active .beat { color: var(--live); }
   .play {
-    width: 36px; height: 36px; border-radius: 50%; margin-top: 6px;
-    border: 1px solid var(--cut); background: none; color: var(--cut);
+    width: 34px; height: 34px; border-radius: 50%; margin-top: 8px;
+    border: 1px solid var(--rule); background: none; color: var(--c);
     cursor: pointer; display: grid; place-items: center;
-    transition: background .2s, color .2s, transform .2s;
+    transition: background .2s, color .2s, border-color .2s;
   }
-  .play:hover:not(:disabled) { background: var(--cut); color: #FFF6E8; }
-  .play:disabled { opacity: .3; cursor: not-allowed; }
-  .play:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
-  .line.active .play { background: var(--cut); color: #FFF6E8; transform: scale(1.06); }
-  .play svg { width: 13px; height: 13px; fill: currentColor; }
+  .play:hover:not(:disabled) { background: var(--c); border-color: var(--c); color: var(--night); }
+  .play:disabled { opacity: .28; cursor: not-allowed; }
+  .play:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+  .line.active .play { background: var(--live); border-color: var(--live); color: var(--night); }
+  .play svg { width: 12px; height: 12px; fill: currentColor; }
+
+  /* 虚实语法：AI 的字发虚偏灰，真人的字锐利色实 */
   .said {
-    font-family: "ZCOOL QingKe HuangYou", serif; font-size: clamp(22px, 3.4vw, 30px);
-    line-height: 1.5; color: var(--cut); margin: 0 0 8px; text-wrap: balance; letter-spacing: .02em;
+    font-family: var(--font-display); font-size: clamp(20px, 3vw, 27px); font-weight: 500;
+    line-height: 1.58; color: var(--c); margin: 0 0 10px; text-wrap: balance; letter-spacing: .01em;
   }
-  .trans { margin: 0 0 10px; font-size: 15px; color: var(--ink-2); }
-  .gloss { margin: 0; font-size: 13.5px; color: var(--dust); border-left: 2px solid var(--rule); padding-left: 12px; }
-  .row-foot { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
-  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .08em; padding: 4px 9px; border-radius: 2px; }
-  .tag.unver { background: rgba(183,36,31,.12); color: var(--cut-lit); border: 1px solid rgba(183,36,31,.35); }
-  .tag.verified { background: rgba(154,132,97,.16); color: var(--dust); border: 1px solid rgba(154,132,97,.45); }
-  .tag.human { background: rgba(78,122,62,.14); color: #4E7A3E; border: 1px solid rgba(78,122,62,.4); }
+  .line.ai .said { color: color-mix(in srgb, var(--c) 60%, var(--dust)); }
+  .line.active .said { color: var(--c); opacity: 1; text-shadow: none; }
+
+  .trans { margin: 0 0 10px; font-size: 14.5px; color: var(--ink-2); }
+  /* 注释升格：悬挂缩进，不再压成灰色小字 */
+  .gloss {
+    font-family: var(--font-ui); margin: 0; font-size: 12.5px; color: var(--ink-2);
+    padding-left: 14px; text-indent: -14px; line-height: 1.85;
+  }
+  .row-foot { display: flex; align-items: center; gap: 16px; margin-top: 15px; flex-wrap: wrap; }
+  .tag { font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .09em; color: var(--dust); }
+  .tag.human { color: var(--c); font-weight: 500; }
   .wrong {
-    font-family: "Noto Sans SC", sans-serif; font-size: 13px; background: none; border: none;
-    cursor: pointer; color: var(--dust); border-bottom: 1px dashed var(--dust); padding: 0 0 2px;
+    font-family: var(--font-ui); font-size: 12.5px; background: none; border: none;
+    cursor: pointer; color: var(--dust); border-bottom: 1px dashed var(--rule); padding: 0 0 2px;
   }
   .wrong:hover:not(:disabled) { color: var(--cut-lit); border-bottom-color: var(--cut-lit); }
-  .wrong:disabled { opacity: .3; cursor: not-allowed; }
-  .wrong:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .wrong:disabled { opacity: .35; cursor: not-allowed; }
+  .wrong:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
 </style>
