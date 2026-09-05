@@ -19,7 +19,7 @@ const scene: Scene = {
 
 function perf(lines: Array<{ beatId: string }>): Performance {
   return {
-    id: 'p', sceneId: 's', dialectId: 'jilu', source: 'tts', verification: 'unverified',
+    id: 'p', sceneId: 's', dialectId: 'chengyu', source: 'tts', verification: 'unverified',
     lines: lines.map((l) => ({ ...l, textDialect: 'a', textMandarin: 'b' })),
   };
 }
@@ -30,11 +30,17 @@ describe('loadScenes / loadPerformances', () => {
     expect(scenes.get('late-night')?.beats).toHaveLength(6);
   });
 
-  it('读出冀鲁官话的演绎且标为未校对', () => {
+  it('读出东北官话的演绎且标为未校对', () => {
     const ps = loadPerformances(DATA_DIR);
-    const p = ps.find((x) => x.id === 'late-night.jilu');
+    const p = ps.find((x) => x.id === 'late-night.dongbei');
     expect(p?.verification).toBe('unverified');
     expect(p?.source).toBe('tts');
+  });
+
+  // 回归测试：冀鲁官话的 AI 演绎 2026-09-05 全部下线，不许悄悄回来
+  it('没有任何 AI 演绎挂在冀鲁官话上', () => {
+    const ps = loadPerformances(DATA_DIR);
+    expect(ps.filter((x) => x.dialectId === 'jilu')).toHaveLength(0);
   });
 });
 
@@ -165,6 +171,47 @@ describe('validateContent', () => {
   });
 });
 
+describe('noAiReason：没有标准形式的方言禁止挂 AI 演绎', () => {
+  // 这一条钉住的是 2026-09-05 的教训。原先的闸门只看层级（point/subcluster
+  // 禁 TTS），于是区级的冀鲁官话畅通无阻——但它是一个**分类**，不是任何人说
+  // 的一种话，模型只能把济南、胶东、天津的碎片拼一起。武城母语者一听「几乎
+  // 都不对」。
+  //
+  // 所以真正的分界不是层级，是有没有事实标准形式。层级闸留着（它挡的是另
+  // 一回事：颗粒太细），noAiReason 是并列的第二道闸。
+  it('区级方言只要标了 noAiReason，挂 TTS 演绎就抛错', () => {
+    const dialects = new Map<string, Dialect>([
+      ['x', { id: 'x', name: '某区', level: 'group', parentId: null, noAiReason: '没有标准形式' }],
+    ]);
+    const p: Performance = {
+      id: 'p', sceneId: 's', dialectId: 'x', source: 'tts', verification: 'unverified',
+      lines: scene.beats.map((b) => ({ beatId: b.id, textDialect: 'a', textMandarin: 'b' })),
+    };
+    expect(() => validateContent(new Map([['s', scene]]), [p], dialects))
+      .toThrow(/禁止 AI 生成/);
+  });
+
+  // 真人录音不受这道闸限制——恰恰相反，标了 noAiReason 的地方**只能**靠真人
+  it('同一个方言挂真人录音则放行', () => {
+    const dialects = new Map<string, Dialect>([
+      ['x', { id: 'x', name: '某区', level: 'group', parentId: null, noAiReason: '没有标准形式' }],
+    ]);
+    const p: Performance = {
+      id: 'p', sceneId: 's', dialectId: 'x', source: 'human', verification: 'human_recorded',
+      lines: scene.beats.map((b) => ({ beatId: b.id, textDialect: 'a', textMandarin: 'b' })),
+    };
+    expect(() => validateContent(new Map([['s', scene]]), [p], dialects)).not.toThrow();
+  });
+
+  // 真实数据上的守卫：冀鲁和胶辽都必须带着理由，理由本身要显示在页面上
+  it('冀鲁与胶辽在真实数据里都标了理由', () => {
+    const ds = loadDialects(DATA_DIR);
+    for (const id of ['jilu', 'jiaoliao']) {
+      expect(ds.get(id)?.noAiReason, `${id} 缺 noAiReason`).toBeTruthy();
+    }
+  });
+});
+
 describe('linesForBeat', () => {
   it('跨演绎取出同一拍，用于横向对比', () => {
     const ps = loadPerformances(DATA_DIR);
@@ -178,7 +225,7 @@ describe('linesForBeat', () => {
     // 断言集合而非顺序：加新方言不该让测试红，顺序是加载实现细节
     const dialects = got.map((g) => g.performance.dialectId).sort();
     expect(dialects).toEqual([...new Set(dialects)].sort());
-    expect(dialects).toContain('jilu');
+    expect(dialects).toContain('dongbei');
   });
 
   // 回归测试：三个场景都用 b1..b6 做拍号，只按 beatId 匹配会把「上门要债」

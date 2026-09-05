@@ -112,10 +112,22 @@ export function validateContent(
       );
     }
 
-    if (p.source === 'tts' && TTS_FORBIDDEN_LEVELS.has(dialect.level)) {
-      throw new Error(
-        `演绎 ${p.id}：TTS 演绎不得挂在点级/小片级方言（${p.dialectId}）——模型给不出县域颗粒的口音`,
-      );
+    // 两道 AI 闸，理由不同不能合并：
+    // 层级闸挡的是「颗粒太细」（模型给不出县域口音）；
+    // noAiReason 挡的是「这个方言没有标准形式」——层级再粗也不行，冀鲁官话
+    // 是区级，照样禁止。把后者写成数据而不是代码里的名单，是为了让理由能
+    // 跟着显示到页面上。
+    if (p.source === 'tts') {
+      if (dialect.noAiReason) {
+        throw new Error(
+          `演绎 ${p.id}：${p.dialectId} 已标注禁止 AI 生成——${dialect.noAiReason}`,
+        );
+      }
+      if (TTS_FORBIDDEN_LEVELS.has(dialect.level)) {
+        throw new Error(
+          `演绎 ${p.id}：TTS 演绎不得挂在点级/小片级方言（${p.dialectId}）——模型给不出县域颗粒的口音`,
+        );
+      }
     }
 
     const beatIds = new Set(scene.beats.map((b) => b.id));

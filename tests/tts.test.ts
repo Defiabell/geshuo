@@ -3,7 +3,7 @@ import { voiceFor, instructionFor, countBilledChars, INSTRUCT_MODEL } from '../s
 
 describe('voiceFor：方言 × 声色', () => {
   it('同一个方言的两个声色档位必须是不同音色——否则妈妈和孩子共用一副嗓子', () => {
-    for (const dialect of ['jilu', 'chengyu', 'yue', 'dongbei']) {
+    for (const dialect of ['chengyu', 'yue', 'dongbei']) {
       const f = voiceFor(dialect, 'adult_female');
       const m = voiceFor(dialect, 'adult_male');
       expect(f.voice, `${dialect} 的男女声撞车了`).not.toBe(m.voice);
@@ -12,7 +12,6 @@ describe('voiceFor：方言 × 声色', () => {
 
   it('每个方言的每个档位都真的在说那个方言，没有普通话混进来', () => {
     const expected: Record<string, string> = {
-      jilu: '山东话',
       chengyu: '四川话',
       yue: '粤语',
       dongbei: '东北话',
@@ -29,7 +28,7 @@ describe('voiceFor：方言 × 声色', () => {
   });
 
   it('有这个方言但没有这个声色档位，也要抛错而不是拿别的档位顶替', () => {
-    expect(() => voiceFor('jilu', 'young_female')).toThrow(/没有 young_female 档/);
+    expect(() => voiceFor('chengyu', 'young_female')).toThrow(/没有 young_female 档/);
   });
 
   it('胶辽官话（青岛话）刻意没有音色——没有胶辽专属音色，「山东话」指令能否覆盖胶东口音必须真人听测', () => {
@@ -40,7 +39,7 @@ describe('voiceFor：方言 × 声色', () => {
   // instruct 字段（五种指令输出 md5 相同），所以任何**依赖方言指令**的音色
   // 都不能落在这个模型上——否则出来的是普通话，而页面上标着方言。
   it('凡是靠 dialectInstruction 出方言的音色，必须落在支持 instruction 的模型上', () => {
-    for (const dialect of ['jilu', 'chengyu', 'yue', 'dongbei']) {
+    for (const dialect of ['chengyu', 'yue', 'dongbei']) {
       for (const profile of ['adult_female', 'adult_male'] as const) {
         const spec = voiceFor(dialect, profile);
         if (spec.dialectInstruction) {
@@ -51,11 +50,15 @@ describe('voiceFor：方言 × 声色', () => {
     }
   });
 
-  it('山东话没有专属音色，男女两档都必须走 instruction 路径并带上方言指令', () => {
+  // 这条曾经断言的是相反的事：「山东话没有专属音色，两档都走 instruction 路径」。
+  // 2026-09-05 武城母语者判定那批音「几乎都不对」——没有专属音色时，靠一句
+  // 「请用山东话表达」逼出来的不是降级方案，是造假。整个 jilu 条目已删除。
+  //
+  // 这条测试的作用是**不许它悄悄回来**：以后谁想加冀鲁，必须先在音色表里
+  // 找到真的山东音色，而不是再拿普通话音色配指令凑一个。
+  it('冀鲁官话不得有音色——没有专属音色就不做，不许拿指令硬凑', () => {
     for (const profile of ['adult_female', 'adult_male'] as const) {
-      const spec = voiceFor('jilu', profile);
-      expect(spec.model).toBe(INSTRUCT_MODEL);
-      expect(spec.dialectInstruction).toMatch(/山东话/);
+      expect(() => voiceFor('jilu', profile)).toThrow(/没有可用音色/);
     }
   });
 
@@ -70,9 +73,9 @@ describe('voiceFor：方言 × 声色', () => {
 
 describe('instructionFor', () => {
   it('方言指令在前、情绪在后拼成一句', () => {
-    const spec = voiceFor('jilu', 'adult_female');
+    const spec = voiceFor('dongbei', 'adult_female');
     const s = instructionFor('用非常生气的口气说。', spec);
-    expect(s.indexOf('山东话')).toBeLessThan(s.indexOf('生气'));
+    expect(s.indexOf('东北话')).toBeLessThan(s.indexOf('生气'));
   });
 
   it('没有方言指令时只剩情绪', () => {

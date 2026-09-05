@@ -9,6 +9,7 @@
   lng: 116.9
   lat: 37.4
   description: 山东西北部与河北东南部。德州、济南、聊城、滨州、淄博属此。
+  noAiReason: 没有事实标准形式——无书面正字、无影视标准腔，四十余县市内部差异大。AI 生成的是各地碎片的拼凑，本地人一听就不对。这一格只能等本地人。
 - id: jiaoliao
   name: 胶辽官话
   level: group
@@ -16,6 +17,7 @@
   lng: 120.4
   lat: 36.1
   description: 胶东半岛与辽东半岛。青岛、烟台、威海属此，与冀鲁官话互通有难度。
+  noAiReason: 同冀鲁官话——没有事实标准形式，模型没见过成体系的胶辽语料。
 - id: xinan
   name: 西南官话
   level: group

@@ -91,21 +91,16 @@ const VOICES: Record<string, Partial<Record<VoiceProfile, VoiceSpec>>> = {
     },
     adult_male: { model: 'cosyvoice-v3-flash', voice: 'longlaotie_v3', dialect: '东北话' },
   },
-  // 山东话：两张音色表里都没有专属音色，男女都只能走指令路径
-  jilu: {
-    adult_female: {
-      model: INSTRUCT_MODEL,
-      voice: 'longanhuan_v3.6',
-      dialect: '山东话',
-      dialectInstruction: '请用山东话表达。',
-    },
-    adult_male: {
-      model: INSTRUCT_MODEL,
-      voice: 'loongjohn',
-      dialect: '山东话',
-      dialectInstruction: '请用山东话表达。',
-    },
-  },
+  // 冀鲁官话（jilu）曾经在这里，2026-09-05 撤掉。
+  //
+  // 撤的理由这段注释本来就写着：「两张音色表里都没有专属音色，男女都只能走
+  // 指令路径」——没有真实的山东音色，只能拿普通话音色加一句「请用山东话表达」
+  // 硬逼。逼出来的东西被武城母语者判定「几乎都不对」，33 条台词、28 个 mp3
+  // 全部下线。
+  //
+  // 教训是通用的：**没有专属音色时，指令路径不是降级方案，是造假**。要加新
+  // 方言，先确认音色表里有它自己的声音；只有 dialectInstruction 没有 dialect
+  // 音色的，宁可不做——voiceFor() 会硬 throw，那正是我们要的。
   // 胶辽官话（青岛）刻意留空：没有胶辽专属音色，而「山东话」这个指令大类
   // 能不能覆盖胶东口音，机器判断不了，必须真人听测。留空 → voiceFor 抛错，
   // 好过悄悄套一个听起来像济南话的东西冒充青岛话。
