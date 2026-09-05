@@ -1,7 +1,7 @@
 ---
 import { levelLabel } from '../lib/dialect-tree';
-import type { Dialect, PerformanceSource, Transcript } from '../lib/types';
-interface Props { dialect: Dialect; source: PerformanceSource; transcript?: Transcript }
+import type { Dialect, TakeSource, Transcript } from '../lib/types';
+interface Props { dialect: Dialect; source: TakeSource; transcript?: Transcript }
 const { dialect, source, transcript } = Astro.props;
 // validateContent() 已硬性拦截 TTS 挂在 point/subcluster 级方言（见 src/lib/content.ts），
 // 所以能通过校验的 TTS 演绎，level 必然不是 'point'——后半个条件恒为真，去掉。

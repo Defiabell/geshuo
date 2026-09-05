@@ -1,8 +1,8 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import { loadDialects } from '../lib/dialect-tree';
-import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { loadSite } from '../lib/content';
+import { identityOf } from '../lib/identity';
 
 // 顶层 frontmatter 作用域（review.astro 不是动态路由，没有 getStaticPaths），
 // 可以直接用 process.cwd() 声明常量——理由同 index.astro 与
@@ -10,15 +10,12 @@ import { loadScenes, loadPerformances, validateContent } from '../lib/content';
 // astro build 时会指向 rolldown 打包产物自身的位置，路径深度算不对，
 // 只有 process.cwd() 在 dev 和 build 下都稳定指向项目根目录。
 const DATA_DIR = join(process.cwd(), 'src', 'data');
-const dialects = loadDialects(DATA_DIR);
-const scenes = loadScenes(DATA_DIR);
-const performances = loadPerformances(DATA_DIR);
-validateContent(scenes, performances, dialects);
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
-const rows = performances.flatMap((p) =>
+const rows = takes.flatMap((p) =>
   p.lines.map((line) => ({
     performanceId: p.id,
-    dialect: dialects.get(p.dialectId)!.name,
+    dialect: identityOf(p, dialects, places).name,
     scene: scenes.get(p.sceneId)!.title,
     line,
   })),

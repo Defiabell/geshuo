@@ -1,18 +1,14 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import { loadDialects } from '../lib/dialect-tree';
-import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { loadSite } from '../lib/content';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
-const dialects = loadDialects(DATA_DIR);
-const scenes = loadScenes(DATA_DIR);
-const performances = loadPerformances(DATA_DIR);
-validateContent(scenes, performances, dialects);
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
 // 只有 AI 合成的才进题库：真人录音是答案本身，拿来考人没意义，
 // 而且这个游戏的产出是要拿来判断 AI 音准的。
-const clips = performances
+const clips = takes
   .filter((p) => p.source === 'tts')
   .flatMap((p) =>
     p.lines

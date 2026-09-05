@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
 import { loadScenes } from '../../../src/lib/content';
-import type { Performance } from '../../../src/lib/types';
+import type { Take } from '../../../src/lib/types';
 
 /**
  * 投稿录音的取回与试听。
@@ -81,11 +81,11 @@ function esc(s: string): string {
 
 /** 站上同一拍各方言的 AI 版本，拿来跟真人录音对照着听 */
 function aiVersionsFor(sceneId: string, beatId: string) {
-  const dir = join(DATA_DIR, 'performances');
+  const dir = join(DATA_DIR, 'takes');
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => f.endsWith('.yaml'))
-    .map((f) => parse(readFileSync(join(dir, f), 'utf8')) as Performance)
+    .map((f) => parse(readFileSync(join(dir, f), 'utf8')) as Take)
     .filter((p) => p.sceneId === sceneId && p.source === 'tts')
     .map((p) => ({ id: p.id, dialectId: p.dialectId, audio: p.lines.find((l) => l.beatId === beatId)?.audio }))
     .filter((x): x is { id: string; dialectId: string; audio: string } => Boolean(x.audio));

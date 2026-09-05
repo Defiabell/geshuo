@@ -1,7 +1,7 @@
 ---
-import type { Beat, PerformanceLine, Verification } from '../lib/types';
+import type { Beat, TakeLine, Verification } from '../lib/types';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
-interface Props { beat: Beat; line: PerformanceLine; verification: Verification; color?: string; human?: boolean }
+interface Props { beat: Beat; line: TakeLine; verification: Verification; color?: string; human?: boolean }
 const { beat, line, verification, color = 'var(--ink-2)', human = false } = Astro.props;
 const order = String(beat.order).padStart(2, '0');
 ---

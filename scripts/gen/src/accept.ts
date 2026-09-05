@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { loadScenes } from '../../../src/lib/content';
 import { measureDurationMs } from './duration';
-import type { Dialect, Performance } from '../../../src/lib/types';
+import type { Place, Take } from '../../../src/lib/types';
 
 /**
  * 把审听通过的投稿录音接进站点。
@@ -38,7 +38,7 @@ interface Obj { key: string; custom_metadata?: Meta }
 const SAME_AS_AI = new Set(['同ai', '同AI', '=ai', '=AI', '同上', '一样']);
 
 interface Draft {
-  dialect: Dialect;
+  place: Place;
   contributor?: string;
   scenes: Record<string, Record<string, { intent?: string; ai?: string; ai_mandarin?: string; said: string; mandarin?: string; note?: string }>>;
 }
@@ -55,9 +55,9 @@ function manifest(): Obj[] {
 }
 
 function aiLineFor(sceneId: string, beatId: string): { dialect: string; mandarin: string } | null {
-  const dir = join(DATA_DIR, 'performances');
+  const dir = join(DATA_DIR, 'takes');
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.yaml'))) {
-    const p = parse(readFileSync(join(dir, f), 'utf8')) as Performance;
+    const p = parse(readFileSync(join(dir, f), 'utf8')) as Take;
     if (p.sceneId !== sceneId || p.source !== 'tts' || p.dialectId !== 'jilu') continue;
     const l = p.lines.find((x) => x.beatId === beatId);
     if (l) return { dialect: l.textDialect, mandarin: l.textMandarin };
@@ -89,14 +89,16 @@ function draft() {
     '# 唯一不行的是留空：那等于把 AI 编的字悄悄安到你的录音上。',
     '# 某一句实在不想留，把整条删掉即可。',
     '',
-    'dialect:',
-    '  id: wucheng',
-    '  name: 山东武城',
-    '  level: point',
-    '  parentId: jilu',
+    '# 你是哪儿人。主键是行政区划不是方言区——你知道自己是武城人，',
+    '# 不一定知道自己属于「冀鲁官话」。dialectId 是可选注释，不知道就删掉这行。',
+    'place:',
+    "  code: '371428'",
+    '  name: 武城县',
+    '  province: 山东省',
+    '  city: 德州市',
     '  lng: 116.07',
     '  lat: 37.21',
-    '  description: 冀鲁官话内的具体方言点，德州市武城县。',
+    '  dialectId: jilu',
     '',
     "contributor: ''   # 想署名就写个称呼，留空则不署",
     '',
@@ -109,7 +111,7 @@ function draft() {
     const missing = speaking.filter((b) => !beats.includes(b.id)).map((b) => b.id);
     lines.push(`  # ${scene?.title ?? sceneId}`);
     if (missing.length) {
-      lines.push(`  # ⚠ 这一场还缺 ${missing.join(' / ')}，缺拍的场景 accept 会跳过（横向对比靠逐拍对齐）`);
+      lines.push(`  # 这一场还缺 ${missing.join(' / ')}——不影响接收，缺的拍会显示成「还没人认领」`);
     }
     lines.push(`  ${sceneId}:`);
     for (const b of speaking) {
@@ -136,22 +138,24 @@ function draft() {
 function accept() {
   if (!existsSync(TEXTS)) throw new Error('没有 .inbox/texts.yaml —— 先跑 pnpm recordings:draft');
   const d = parse(readFileSync(TEXTS, 'utf8')) as Draft;
-  if (!d?.dialect?.id) throw new Error('texts.yaml 里缺 dialect.id');
+  if (!d?.place?.code) throw new Error('texts.yaml 里缺 place.code');
 
   const scenes = loadScenes(DATA_DIR);
   const objs = manifest();
   const clipOf = (sceneId: string, beatId: string) =>
     objs.find((o) => o.custom_metadata?.sceneId === sceneId && o.custom_metadata?.beatId === beatId);
 
-  // 1) 方言点：已有就不动（別人可能已经录过这个点）
-  const dialectsPath = join(DATA_DIR, 'dialects.yaml');
-  const dialects = parse(readFileSync(dialectsPath, 'utf8')) as Dialect[];
-  if (!dialects.some((x) => x.id === d.dialect.id)) {
-    dialects.push(d.dialect);
-    writeFileSync(dialectsPath, stringify(dialects), 'utf8');
-    console.log(`✓ 方言树新增 ${d.dialect.name}（${d.dialect.id}，${d.dialect.level} 级，挂在 ${d.dialect.parentId}）`);
+  // 1) 行政区划：已有就不动（别人可能已经在这个县录过）。
+  // 点由贡献者创造——这里就是「创造」发生的地方：第一个从某个县投稿的人，
+  // 把那个县带上地图。
+  const placesPath = join(DATA_DIR, 'places.yaml');
+  const places = parse(readFileSync(placesPath, 'utf8')) as Place[];
+  if (!places.some((x) => x.code === d.place.code)) {
+    places.push(d.place);
+    writeFileSync(placesPath, stringify(places), 'utf8');
+    console.log(`✓ 地图新增 ${d.place.province}${d.place.city}${d.place.name}（${d.place.code}）`);
   } else {
-    console.log(`- 方言点 ${d.dialect.id} 已存在，不动`);
+    console.log(`- ${d.place.name}（${d.place.code}）已在册，不动`);
   }
 
   let made = 0;
@@ -161,31 +165,33 @@ function accept() {
     const speaking = scene.beats.filter((b) => b.speakerRole !== 'none');
     const filled = Object.entries(beats).filter(([, v]) => (v.said ?? '').trim() !== '');
 
-    const missing = speaking.filter((b) => !filled.some(([id]) => id === b.id));
-    if (missing.length) {
-      // 缺拍的不给建——横向对比靠逐拍对齐，少一拍整列会错位，validateContent 也会拦
-      console.warn(
-        `- ${scene.title} 跳过：缺 ${missing.map((b) => b.id).join(' / ')}` +
-          `（录了但 said 没填的也算缺）`,
-      );
+    // 缺拍**不再跳过**。旧规则要求录全整场戏，但真实投稿记录打脸了它：六拍
+    // 两角色的戏，投稿人只录了 kid 那一个角色的两拍就停了——那不是半途而废，
+    // 是一个人只演得了一个人。把半场戏判成废品，等于把最自然的贡献方式扔掉。
+    if (filled.length === 0) {
+      console.warn(`- ${scene.title} 跳过：一拍都没填`);
       continue;
     }
+    const missing = speaking.filter((b) => !filled.some(([id]) => id === b.id));
+    if (missing.length) {
+      console.log(`  ${scene.title}：收 ${filled.length} 拍，缺 ${missing.map((b) => b.id).join(' / ')}（会显示成待认领）`);
+    }
 
-    const perfId = `${sceneId}.${d.dialect.id}`;
+    const perfId = `${sceneId}.${d.place.code}`;
     const outDir = join(ROOT, 'public/audio', perfId);
     mkdirSync(outDir, { recursive: true });
 
-    const perf: Performance = {
+    const perf: Take = {
       id: perfId,
       sceneId,
-      dialectId: d.dialect.id,
+      placeCode: d.place.code,
       source: 'human',
       verification: 'human_recorded',
       // 真人录音的字一律标"大意"：方言词常常没有定字，逐字转写做不到，
       // 页面上会明写"以音为准"。要逐字的那天再手工改成 verbatim。
       transcript: 'approximate',
       ...(d.contributor ? { contributor: d.contributor } : {}),
-      lines: scene.beats.map((b) => {
+      lines: scene.beats.filter((b) => b.speakerRole === 'none' || beats[b.id]?.said?.trim()).map((b) => {
         if (b.speakerRole === 'none') {
           // 空拍沿用骨架里的处理：不配音频
           return { beatId: b.id, textDialect: '——', textMandarin: '（沉默）' };
@@ -223,7 +229,7 @@ function accept() {
       }),
     };
 
-    writeFileSync(join(DATA_DIR, 'performances', `${perfId}.yaml`), stringify(perf), 'utf8');
+    writeFileSync(join(DATA_DIR, 'takes', `${perfId}.yaml`), stringify(perf), 'utf8');
     console.log(`✓ ${scene.title} → ${perfId}（真人录音，${filled.length} 条）`);
     made += 1;
   }

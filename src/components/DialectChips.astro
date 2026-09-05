@@ -1,10 +1,10 @@
 ---
 import { levelLabel } from '../lib/dialect-tree';
 import { colorFor } from '../lib/palette';
-import type { Dialect, Performance } from '../lib/types';
-interface Props { dialects: Dialect[]; performances: Performance[]; sceneId: string; currentId: string }
-const { dialects, performances, sceneId, currentId } = Astro.props;
-const sourceOf = (id: string) => performances.find((p) => p.dialectId === id)?.source;
+import type { Dialect, Take } from '../lib/types';
+interface Props { dialects: Dialect[]; takes: Take[]; sceneId: string; currentId: string }
+const { dialects, takes, sceneId, currentId } = Astro.props;
+const sourceOf = (id: string) => takes.find((p) => p.dialectId === id)?.source;
 ---
 <div class="dialects" role="group" aria-label="选择方言">
   {dialects.map((d) => {

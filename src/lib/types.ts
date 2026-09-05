@@ -24,6 +24,35 @@ export interface Dialect {
   noAiReason?: string;
 }
 
+/**
+ * 一个县级行政区划。这是**真人贡献的主键**。
+ *
+ * 为什么不用方言区当主键：行政区划是确定的，方言分区是有争议的。这份仓库里
+ * 武城的 `dialects.yaml` 条目写着「片级归属待考」——那不是谦虚，是真不知道。
+ * 而且人知道自己是武城人，不知道自己是「冀鲁官话区」的人；让贡献者先选方言区
+ * 等于在贡献之前先考他一道题。
+ *
+ * 方言归属退成 `dialectId` 这个可选注释：谁知道谁标，不标也能存在。它只用来
+ * 做聚合展示，不参与身份。
+ *
+ * **点由贡献者创造，不预先枚举。** 语保预先定死了 1712 个调查点，我们不抄——
+ * 枚举等于一上来就制造两千多个空页面，看着像烂尾工程。这里只登记真的有人
+ * 贡献过的地方，地图上每多一个人就多亮一个点。空白因此是「还没人来」，
+ * 不是「缺失」。
+ */
+export interface Place {
+  /** GB/T 2260 六位行政区划代码，比如武城县 371428 */
+  code: string;
+  /** 县级名称，比如「武城县」 */
+  name: string;
+  province: string;
+  city: string;
+  lng: number;
+  lat: number;
+  /** 可选：这个地方属于哪个方言节点。只用于聚合展示，不是身份 */
+  dialectId?: string;
+}
+
 /** 空拍的保留角色名：这一拍没人说话，不合成音频 */
 export const NO_SPEAKER = 'none';
 
@@ -96,8 +125,8 @@ export interface Scene {
 export const VERIFICATIONS = ['unverified', 'native_verified', 'human_recorded'] as const;
 export type Verification = (typeof VERIFICATIONS)[number];
 
-export const PERFORMANCE_SOURCES = ['tts', 'human'] as const;
-export type PerformanceSource = (typeof PERFORMANCE_SOURCES)[number];
+export const TAKE_SOURCES = ['tts', 'human'] as const;
+export type TakeSource = (typeof TAKE_SOURCES)[number];
 
 /**
  * 文字跟录音的对应程度。这是**独立于可信度三档的另一根轴**：
@@ -117,7 +146,7 @@ export type PerformanceSource = (typeof PERFORMANCE_SOURCES)[number];
 export const TRANSCRIPTS = ['verbatim', 'approximate'] as const;
 export type Transcript = (typeof TRANSCRIPTS)[number];
 
-export interface PerformanceLine {
+export interface TakeLine {
   beatId: string;
   textDialect: string;
   textMandarin: string;
@@ -134,15 +163,43 @@ export interface PerformanceLine {
   durationMs?: number;
 }
 
-export interface Performance {
+/**
+ * 一次演绎：**一个人（或一个 AI）对一场戏的一遍**，可以只录一部分。
+ *
+ * 原名 Take，2026-09-05 改名并放宽，因为旧模型有两个表达不了的东西：
+ *
+ * 1. **一个地方只能有一份。** 旧模型的键是 (场景 × 方言)，所以「武城的三个人
+ *    各说各的」写不下去。但一个母语者不是 ground truth——owner 本人是武城人，
+ *    他说「感觉我一个人说的也不对」。个人语感有代际差、村落差、记性差。
+ *    解法不是去找更权威的人，是**允许同一格有多个答案，并把分歧摆出来**。
+ *    三个武城人填三个说法不是数据脏了，是真实信息。
+ *
+ * 2. **必须录完整场戏。** 旧校验要求 lines 覆盖全部拍。但实际投稿记录显示：
+ *    六拍两角色的戏，owner 自己只录了 kid 那一个角色的两拍就停了——那不是
+ *    偷懒，是**一个人只演得了一个人**。半场戏该算「已认领一半」，不是「未完成」。
+ *
+ * 身份是**二选一**：AI 演绎挂方言区（dialectId），真人贡献挂行政区划
+ * （placeCode）。不能都有，也不能都没有——这条由 validateContent 强制。
+ * 两者不对称是故意的：AI 只能到区级抽象，真人永远是某个具体的县。
+ */
+export interface Take {
   id: string;
   sceneId: string;
-  dialectId: string;
-  source: PerformanceSource;
+  /** AI 演绎的归属：方言节点。与 placeCode 互斥 */
+  dialectId?: string;
+  /** 真人贡献的归属：县级行政区划代码。与 dialectId 互斥 */
+  placeCode?: string;
+  source: TakeSource;
   verification: Verification;
   /** 文字与录音的对应程度；不填等于 verbatim。真人录音一般是 approximate */
   transcript?: Transcript;
   contributor?: string;
   verifier?: string;
-  lines: PerformanceLine[];
+  /** 这一遍录到的拍。真人可以只录一部分；AI 必须录全 */
+  lines: TakeLine[];
+}
+
+/** 同一场戏、同一个身份可以有多份 Take，靠这个键区分 */
+export function takeIdentity(t: Take): string {
+  return t.dialectId ?? t.placeCode ?? '';
 }

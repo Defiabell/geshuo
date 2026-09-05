@@ -22,10 +22,10 @@ describe('loadDialects', () => {
     expect(map.get('jilu')?.level).toBe('group');
   });
 
-  it('德州与青岛分属不同官话区', () => {
+  it('冀鲁与胶辽同属官话大区', () => {
     const map = loadDialects(DATA_DIR);
-    expect(map.get('dezhou')?.parentId).toBe('jilu');
-    expect(map.get('qingdao')?.parentId).toBe('jiaoliao');
+    expect(map.get('jilu')?.parentId).toBe('guanhua');
+    expect(map.get('jiaoliao')?.parentId).toBe('guanhua');
   });
 
   it('不存在「山东话」这样的合并节点', () => {
@@ -54,8 +54,8 @@ describe('loadDialects', () => {
 describe('ancestorsOf', () => {
   it('返回从直接父级到根的链', () => {
     const map = loadDialects(DATA_DIR);
-    const chain = ancestorsOf(map, 'dezhou').map((d) => d.id);
-    expect(chain).toEqual(['jilu', 'guanhua']);
+    const chain = ancestorsOf(map, 'chengyu').map((d) => d.id);
+    expect(chain).toEqual(['xinan', 'guanhua']);
   });
 
   it('根节点没有祖先', () => {

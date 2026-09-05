@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { loadPerformances } from '../src/lib/content';
+import { loadTakes } from '../src/lib/content';
 
 const DATA_DIR = new URL('../src/data/', import.meta.url).pathname;
 
@@ -21,7 +21,10 @@ describe('猜方言接口的方言清单', () => {
     // 真人录音是答案本身，拿来考人没意义，而且这个游戏的产出正是用来判断
     // AI 音准的。所以真人录音专属的方言点（比如某个县）不需要进 KNOWN。
     const inPool = new Set(
-      loadPerformances(DATA_DIR).filter((p) => p.source === 'tts').map((p) => p.dialectId),
+      loadTakes(DATA_DIR)
+        .filter((p) => p.source === 'tts')
+        .map((p) => p.dialectId)
+        .filter((d): d is string => d !== undefined),
     );
     expect(inPool.size, '题库是空的，这条测试等于没验').toBeGreaterThan(0);
     for (const d of inPool) {
@@ -30,7 +33,7 @@ describe('猜方言接口的方言清单', () => {
   });
 
   it('题库里确实不含真人录音——那是答案，不是考题', () => {
-    const human = loadPerformances(DATA_DIR).filter((p) => p.source === 'human');
+    const human = loadTakes(DATA_DIR).filter((p) => p.source === 'human');
     const guessPage = readFileSync(new URL('../src/pages/guess.astro', import.meta.url), 'utf8');
     expect(guessPage).toContain("p.source === 'tts'");
     // 有真人录音时这条才真的在验东西

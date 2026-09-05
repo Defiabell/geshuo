@@ -2,15 +2,11 @@
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
 import { TURNSTILE_SITEKEY } from '../lib/config';
-import { loadDialects } from '../lib/dialect-tree';
-import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { loadSite } from '../lib/content';
 import { NO_SPEAKER } from '../lib/types';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
-const dialects = loadDialects(DATA_DIR);
-const scenes = loadScenes(DATA_DIR);
-const performances = loadPerformances(DATA_DIR);
-validateContent(scenes, performances, dialects);
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
 // 每一拍给一句普通话参考——投稿人照着意思用自己的话说，而不是照着某个
 // 方言版本念。念别人的版本会把那个方言的措辞带进来，就不是他自己的话了。
@@ -22,7 +18,7 @@ const list = Array.from(scenes.values()).map((scene) => ({
   beats: scene.beats
     .filter((b) => b.speakerRole !== NO_SPEAKER)
     .map((b) => {
-      const ref = performances.find((p) => p.sceneId === scene.id)?.lines.find((l) => l.beatId === b.id);
+      const ref = takes.find((p) => p.sceneId === scene.id)?.lines.find((l) => l.beatId === b.id);
       return { beat: b, role: scene.roles[b.speakerRole], mandarin: ref?.textMandarin ?? '' };
     }),
 }));

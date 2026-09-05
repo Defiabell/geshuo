@@ -1,6 +1,6 @@
-id: w-shoushenme.wucheng
+id: w-shoushenme.371428
 sceneId: w-shoushenme
-dialectId: wucheng
+placeCode: '371428'
 source: human
 verification: human_recorded
 transcript: approximate
@@ -9,5 +9,5 @@ lines:
   - beatId: b1
     textDialect: 你瞅么？没见过啊？
     textMandarin: 你看什么？没见过啊？
-    audio: /audio/w-shoushenme.wucheng/b1.mp3
+    audio: /audio/w-shoushenme.371428/b1.mp3
     durationMs: 2820

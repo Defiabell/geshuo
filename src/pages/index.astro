@@ -1,18 +1,15 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import { loadDialects } from '../lib/dialect-tree';
-import { loadScenes, loadPerformances, validateContent } from '../lib/content';
+import { loadSite } from '../lib/content';
+import { identityOf } from '../lib/identity';
 
 // 首页不走 getStaticPaths，属于顶层 frontmatter 作用域，可以直接用
 // process.cwd() 声明常量——理由同 [scene]/compare/[beat].astro 里的注释：
 // 相对 new URL(...) + import.meta.url 的写法在 astro build 时会指向
 // rolldown 打包产物自身的位置，路径深度算不对。
 const DATA_DIR = join(process.cwd(), 'src', 'data');
-const dialects = loadDialects(DATA_DIR);
-const scenes = loadScenes(DATA_DIR);
-const performances = loadPerformances(DATA_DIR);
-validateContent(scenes, performances, dialects);
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
 // 一句话挑战不混进「挑一出戏」——它是低门槛入口，戏是深度内容，
 // 摆在一起会让人以为一句话也要录五条。
@@ -21,20 +18,20 @@ const weeklies = Array.from(scenes.values())
   .sort((a, b) => (a.weekly! < b.weekly! ? 1 : -1));
 const featured = weeklies[0];
 const featuredLines = featured
-  ? performances
+  ? takes
       .filter((p) => p.sceneId === featured.id)
-      .map((p) => ({ name: dialects.get(p.dialectId)!.name, said: p.lines[0]?.textDialect ?? '' }))
+      .map((p) => ({ name: identityOf(p, dialects, places).name, said: p.lines[0]?.textDialect ?? '' }))
   : [];
 
 const cards = Array.from(scenes.values())
   .filter((scene) => !scene.weekly)
   .map((scene) => {
-    const forScene = performances.filter((p) => p.sceneId === scene.id);
+    const forScene = takes.filter((p) => p.sceneId === scene.id);
     return {
       scene,
       count: forScene.length,
-      first: forScene[0]?.dialectId,
-      names: forScene.map((p) => dialects.get(p.dialectId)!.name),
+      first: forScene[0] ? identityOf(forScene[0], dialects, places).id : undefined,
+      names: forScene.map((p) => identityOf(p, dialects, places).name),
     };
   })
   // 没有任何演绎的场景没有可点进去的目的地——first 会是 undefined，

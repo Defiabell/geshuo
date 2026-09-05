@@ -42,24 +42,7 @@
   lng: 113.3
   lat: 23.1
   description: 汉语十大方言之一，不属官话。
-- id: dezhou
-  name: 山东德州
-  level: point
-  parentId: jilu
-  lng: 116.36
-  lat: 37.44
-  description: 冀鲁官话内的具体方言点。片级归属待考，故直接挂在区级下。
-- id: qingdao
-  name: 山东青岛
-  level: point
-  parentId: jiaoliao
-  lng: 120.38
-  lat: 36.07
-  description: 胶辽官话内的具体方言点。片级归属待考，故直接挂在区级下。
-- id: wucheng
-  name: 山东武城
-  level: point
-  parentId: jilu
-  lng: 116.07
-  lat: 37.21
-  description: 冀鲁官话内的具体方言点，德州市武城县。
+
+# 点级节点（县域颗粒）已于 2026-09-05 全部移出方言树，改由 src/data/places.yaml
+# 按行政区划登记。理由：行政区划是确定的，方言分区是有争议的——武城原先这里
+# 写着「片级归属待考」，那不是谦虚，是真不知道。方言归属退成 Place 上的可选注释。

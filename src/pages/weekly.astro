@@ -2,16 +2,14 @@
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
 import { TURNSTILE_SITEKEY } from '../lib/config';
-import { loadDialects, levelLabel } from '../lib/dialect-tree';
-import { loadScenes, loadPerformances, validateContent, linesForBeat } from '../lib/content';
+import { levelLabel } from '../lib/dialect-tree';
+import { loadSite, takesForBeat } from '../lib/content';
+import { identityOf } from '../lib/identity';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
 import { chainSeconds } from '../lib/audio';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
-const dialects = loadDialects(DATA_DIR);
-const scenes = loadScenes(DATA_DIR);
-const performances = loadPerformances(DATA_DIR);
-validateContent(scenes, performances, dialects);
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
 // 按日期倒序，最新一期做主角，其余进往期。日期在构建时定死——这个站是
 // 静态站 + 手动部署，不假装有「实时当周」这回事。
@@ -23,9 +21,9 @@ const current = weeklies[0];
 const past = weeklies.slice(1);
 
 const columnsFor = (sceneId: string, beatId: string) =>
-  linesForBeat(performances, sceneId, beatId).map(({ performance, line }) => ({
-    dialect: dialects.get(performance.dialectId)!,
-    performance,
+  takesForBeat(takes, sceneId, beatId).map(({ take, line }) => ({
+    dialect: identityOf(take, dialects, places),
+    take,
     line,
   }));
 
@@ -59,7 +57,7 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
       )}
 
       <div class="compare" id="compare">
-        {curCols.map(({ dialect, performance, line }) => (
+        {curCols.map(({ dialect, take, line }) => (
           <div class="col" data-audio={line.audio ?? ''}>
             <h2>
               {dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span>
@@ -68,8 +66,8 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
             <p class="said">{line.textDialect}</p>
             <p class="trans">{line.textMandarin}</p>
             {line.note && <p class="gloss">{line.note}</p>}
-            <span class={`tag ${VERIFICATION_TAG_CLASS[performance.verification]}`}>
-              {VERIFICATION_LABELS[performance.verification]}
+            <span class={`tag ${VERIFICATION_TAG_CLASS[take.verification]}`}>
+              {VERIFICATION_LABELS[take.verification]}
             </span>
           </div>
         ))}

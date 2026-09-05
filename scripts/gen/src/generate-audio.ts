@@ -6,7 +6,7 @@ import { loadScenes } from '../../../src/lib/content';
 import { NO_SPEAKER } from '../../../src/lib/types';
 import { voiceFor, instructionFor, countBilledChars, INSTRUCT_MODEL } from './tts';
 import { measureDurationMs } from './duration';
-import type { Performance } from '../../../src/lib/types';
+import type { Take } from '../../../src/lib/types';
 import type { VoiceSpec } from './tts';
 
 // fileURLToPath() 而不是 new URL(...).pathname——.pathname 不做百分号解码，
@@ -104,24 +104,33 @@ async function synth(text: string, instruction: string, spec: VoiceSpec): Promis
 }
 
 async function main() {
-  const performanceId = process.argv.slice(2).find((a) => !a.startsWith('--'));
-  if (!performanceId) {
-    console.error('用法: pnpm run gen:audio -- <performanceId>');
+  const takeId = process.argv.slice(2).find((a) => !a.startsWith('--'));
+  if (!takeId) {
+    console.error('用法: pnpm run gen:audio -- <takeId>');
     process.exit(1);
   }
 
-  const path = join(DATA_DIR, 'performances', `${performanceId}.yaml`);
-  const perf = parse(readFileSync(path, 'utf8')) as Performance;
+  const path = join(DATA_DIR, 'takes', `${takeId}.yaml`);
+  const perf = parse(readFileSync(path, 'utf8')) as Take;
   const scene = loadScenes(DATA_DIR).get(perf.sceneId);
-  if (!scene) throw new Error(`演绎 ${performanceId} 指向不存在的场景：${perf.sceneId}`);
+  if (!scene) throw new Error(`演绎 ${takeId} 指向不存在的场景：${perf.sceneId}`);
 
-  const outDir = join(ROOT, 'public/audio', performanceId);
+  // 这个脚本只服务 AI 演绎。真人录音挂的是 placeCode 不是 dialectId，而且它的
+  // 音频是人录的——一旦让合成跑上去，覆盖的是不可再生的东西。
+  if (perf.source !== 'tts' || !perf.dialectId) {
+    throw new Error(
+      `演绎 ${takeId} 不是 AI 演绎（source=${perf.source}）——` +
+        '合成脚本不碰真人录音，那是不可再生的',
+    );
+  }
+
+  const outDir = join(ROOT, 'public/audio', takeId);
   mkdirSync(outDir, { recursive: true });
 
   let billed = 0;
   for (const line of perf.lines) {
     const beat = scene.beats.find((b) => b.id === line.beatId);
-    if (!beat) throw new Error(`演绎 ${performanceId} 含场景里没有的拍：${line.beatId}`);
+    if (!beat) throw new Error(`演绎 ${takeId} 含场景里没有的拍：${line.beatId}`);
     if (beat.speakerRole === NO_SPEAKER) {
       console.log(`- ${line.beatId} 空拍，跳过`);
       continue;
@@ -151,7 +160,7 @@ async function main() {
 
     const buf = await synth(line.textDialect, instruction, spec);
     writeFileSync(outPath, buf);
-    line.audio = `/audio/${performanceId}/${line.beatId}.mp3`;
+    line.audio = `/audio/${takeId}/${line.beatId}.mp3`;
     // 量不到就不写这个字段，界面据此不显示秒数——不编数字
     const ms = measureDurationMs(outPath);
     if (ms !== undefined) line.durationMs = ms;

@@ -4,9 +4,9 @@ import Base from '../../../layouts/Base.astro';
 import DialectChips from '../../../components/DialectChips.astro';
 import GrainNotice from '../../../components/GrainNotice.astro';
 import LineCard from '../../../components/LineCard.astro';
-import { loadDialects } from '../../../lib/dialect-tree';
 import { colorFor } from '../../../lib/palette';
-import { loadScenes, loadPerformances, validateContent } from '../../../lib/content';
+import { loadSite } from '../../../lib/content';
+import { identityOf } from '../../../lib/identity';
 
 export async function getStaticPaths() {
   // getStaticPaths() runs in its own isolated scope at build time — only
@@ -21,27 +21,24 @@ export async function getStaticPaths() {
   // not src/. Anchoring on process.cwd() (the project root pnpm/astro is
   // invoked from, in both dev and build) is stable across both.
   const DATA_DIR = join(process.cwd(), 'src', 'data');
-  const dialects = loadDialects(DATA_DIR);
-  const scenes = loadScenes(DATA_DIR);
-  const performances = loadPerformances(DATA_DIR);
-  validateContent(scenes, performances, dialects);
+  const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
-  return performances.map((p) => ({
-    params: { scene: p.sceneId, dialect: p.dialectId },
+  return takes.map((p) => ({
+    params: { scene: p.sceneId, dialect: identityOf(p, dialects, places).id },
     props: {
       scene: scenes.get(p.sceneId)!,
-      performance: p,
-      dialect: dialects.get(p.dialectId)!,
-      siblings: performances
+      take: p,
+      dialect: identityOf(p, dialects, places),
+      siblings: takes
         .filter((x) => x.sceneId === p.sceneId)
-        .map((x) => dialects.get(x.dialectId)!),
-      allForScene: performances.filter((x) => x.sceneId === p.sceneId),
+        .map((x) => identityOf(x, dialects, places)),
+      allForScene: takes.filter((x) => x.sceneId === p.sceneId),
     },
   }));
 }
 
-const { scene, performance, dialect, siblings, allForScene } = Astro.props;
-const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === beatId)!;
+const { scene, take, dialect, siblings, allForScene } = Astro.props;
+const lineOf = (beatId: string) => take.lines.find((l) => l.beatId === beatId)!;
 ---
 <Base title={`${scene.title} · ${dialect.name} — 各说各话`} description={scene.situation}>
   <header class="top">
@@ -52,11 +49,11 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
 
   <DialectChips
     dialects={siblings}
-    performances={allForScene}
+    takes={allForScene}
     sceneId={scene.id}
     currentId={dialect.id}
   />
-  <GrainNotice dialect={dialect} source={performance.source} transcript={performance.transcript} />
+  <GrainNotice dialect={dialect} source={take.source} transcript={take.transcript} />
 
   <div class="bar">
     <button class="btn-play" id="playAll">▶ 从头演一遍</button>
@@ -71,9 +68,9 @@ const lineOf = (beatId: string) => performance.lines.find((l) => l.beatId === be
         <LineCard
           beat={beat}
           line={lineOf(beat.id)}
-          verification={performance.verification}
+          verification={take.verification}
           color={colorFor(dialect)}
-          human={performance.source === 'human'}
+          human={take.source === 'human'}
         />
       ))}
   </div>

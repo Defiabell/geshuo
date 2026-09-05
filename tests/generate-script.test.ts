@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { assertLinesMatchBeats } from '../scripts/gen/src/generate-script';
 import { loadScenes } from '../src/lib/content';
-import type { PerformanceLine } from '../src/lib/types';
+import type { TakeLine } from '../src/lib/types';
 
 const DATA_DIR = new URL('../src/data/', import.meta.url).pathname;
 
-function makeLine(beatId: string): PerformanceLine {
+function makeLine(beatId: string): TakeLine {
   return { beatId, textDialect: '随便写一句', textMandarin: '随便写一句' };
 }
 

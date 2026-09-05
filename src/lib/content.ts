@@ -1,8 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { NO_SPEAKER, PERFORMANCE_SOURCES, TRANSCRIPTS, VERIFICATIONS, VOICE_PROFILES } from './types';
-import type { Dialect, DialectLevel, Performance, PerformanceLine, Scene } from './types';
+import { loadDialects } from './dialect-tree';
+import { NO_SPEAKER, TAKE_SOURCES, TRANSCRIPTS, VERIFICATIONS, VOICE_PROFILES } from './types';
+import type { Dialect, DialectLevel, Place, Scene, Take, TakeLine } from './types';
 
 /** TTS 到不了县级颗粒——point（点）与 subcluster（小片）都在县域颗粒上，禁止挂 TTS 演绎 */
 const TTS_FORBIDDEN_LEVELS = new Set<DialectLevel>(['point', 'subcluster']);
@@ -24,14 +25,31 @@ export function loadScenes(dataDir: string): Map<string, Scene> {
   return map;
 }
 
-export function loadPerformances(dataDir: string): Performance[] {
-  return readYamlDir<Performance>(join(dataDir, 'performances'));
+export function loadTakes(dataDir: string): Take[] {
+  return readYamlDir<Take>(join(dataDir, 'takes'));
+}
+
+/**
+ * 行政区划登记表。只登记真的有人贡献过的地方——不预先枚举全国 2800 个县。
+ */
+export function loadPlaces(dataDir: string): Map<string, Place> {
+  const list = parse(readFileSync(join(dataDir, 'places.yaml'), 'utf8')) as Place[];
+  const map = new Map<string, Place>();
+  for (const pl of list) {
+    if (!/^\d{6}$/.test(pl.code)) {
+      throw new Error(`行政区划代码必须是六位数字：${pl.code}（${pl.name}）`);
+    }
+    if (map.has(pl.code)) throw new Error(`行政区划代码重复：${pl.code}`);
+    map.set(pl.code, pl);
+  }
+  return map;
 }
 
 export function validateContent(
   scenes: Map<string, Scene>,
-  performances: Performance[],
+  takes: Take[],
   dialects: Map<string, Dialect>,
+  places: Map<string, Place>,
 ): void {
   // 场景骨架本身要先过关，不依赖是否已经有演绎——下一步内容动作就是加场景
   // 骨架，写骨架不该被"还没配演绎"挡住检查。
@@ -80,12 +98,41 @@ export function validateContent(
     }
   }
 
-  for (const p of performances) {
+  for (const p of takes) {
     const scene = scenes.get(p.sceneId);
     if (!scene) throw new Error(`演绎 ${p.id} 指向不存在的场景：${p.sceneId}`);
 
-    const dialect = dialects.get(p.dialectId);
-    if (!dialect) throw new Error(`演绎 ${p.id} 指向不存在的方言：${p.dialectId}`);
+    // 身份二选一。两者不对称是故意的：AI 只到区级抽象，真人永远来自某个具体的县。
+    // 允许「都有」会立刻产生一个歧义——这条录音到底代表武城，还是代表整个冀鲁官话？
+    const hasDialect = p.dialectId !== undefined;
+    const hasPlace = p.placeCode !== undefined;
+    if (hasDialect === hasPlace) {
+      throw new Error(
+        `演绎 ${p.id} 的身份必须二选一：AI 演绎给 dialectId，真人贡献给 placeCode——` +
+          (hasDialect ? '现在两个都有' : '现在两个都没有'),
+      );
+    }
+    if (p.source === 'tts' && !hasDialect) {
+      throw new Error(`演绎 ${p.id}：AI 演绎必须挂 dialectId，AI 到不了县级颗粒`);
+    }
+    if (p.source === 'human' && !hasPlace) {
+      throw new Error(
+        `演绎 ${p.id}：真人贡献必须挂 placeCode——人永远来自某个具体的县，` +
+          '挂到方言区上等于替整个区代言',
+      );
+    }
+
+    let dialect: Dialect | undefined;
+    if (hasDialect) {
+      dialect = dialects.get(p.dialectId!);
+      if (!dialect) throw new Error(`演绎 ${p.id} 指向不存在的方言：${p.dialectId}`);
+    }
+    if (hasPlace && !places.has(p.placeCode!)) {
+      throw new Error(
+        `演绎 ${p.id} 指向未登记的行政区划：${p.placeCode}——` +
+          '新地方要先写进 src/data/places.yaml（点由贡献者创造，但得登记）',
+      );
+    }
 
     // verification / source 拼错是两个"诚实标注"能被静默关掉的路径：
     // verification 拼错 → LineCard 的可信度标签渲染成 undefined；
@@ -96,10 +143,10 @@ export function validateContent(
           `必须是 ${VERIFICATIONS.join(' / ')} 之一，否则可信度标签会渲染成空`,
       );
     }
-    if (!PERFORMANCE_SOURCES.includes(p.source)) {
+    if (!TAKE_SOURCES.includes(p.source)) {
       throw new Error(
         `演绎 ${p.id} 的 source 非法：${p.source}——` +
-          `必须是 ${PERFORMANCE_SOURCES.join(' / ')} 之一，否则粒度声明条会静默消失`,
+          `必须是 ${TAKE_SOURCES.join(' / ')} 之一，否则粒度声明条会静默消失`,
       );
     }
 
@@ -117,7 +164,7 @@ export function validateContent(
     // noAiReason 挡的是「这个方言没有标准形式」——层级再粗也不行，冀鲁官话
     // 是区级，照样禁止。把后者写成数据而不是代码里的名单，是为了让理由能
     // 跟着显示到页面上。
-    if (p.source === 'tts') {
+    if (p.source === 'tts' && dialect) {
       if (dialect.noAiReason) {
         throw new Error(
           `演绎 ${p.id}：${p.dialectId} 已标注禁止 AI 生成——${dialect.noAiReason}`,
@@ -130,17 +177,34 @@ export function validateContent(
       }
     }
 
+    // 拍覆盖规则对 AI 和真人不一样，这是刻意的不对称：
+    //
+    // AI 必须录全——它是脚本批量生成的，缺一拍就是生成失败，不该悄悄上站。
+    //
+    // 真人可以只录一部分。旧模型要求录全，但真实投稿记录打脸了它：六拍两角色
+    // 的戏，owner 只录了 kid 那一个角色的两拍就停了。那不是半途而废，是**一个人
+    // 只演得了一个人**。把半场戏判成「未完成」，等于把最自然的贡献方式判成失败。
+    // 半场戏该读作「已认领一半，缺另一半」——那恰恰是最强的召唤。
     const beatIds = new Set(scene.beats.map((b) => b.id));
     const lineIds = new Set(p.lines.map((l) => l.beatId));
 
-    for (const b of beatIds) {
-      if (!lineIds.has(b)) throw new Error(`演绎 ${p.id} 缺少 beat: ${b}`);
+    if (lineIds.size !== p.lines.length) {
+      throw new Error(`演绎 ${p.id} 有重复的 beat`);
     }
     for (const l of lineIds) {
       if (!beatIds.has(l)) throw new Error(`演绎 ${p.id} 含未知 beat: ${l}`);
     }
-    if (p.lines.length !== scene.beats.length) {
-      throw new Error(`演绎 ${p.id} 的台词条数与场景拍数不符`);
+    if (p.lines.length === 0) {
+      throw new Error(`演绎 ${p.id} 一拍都没有`);
+    }
+    if (p.source === 'tts') {
+      for (const b of beatIds) {
+        if (!lineIds.has(b)) {
+          throw new Error(
+            `AI 演绎 ${p.id} 缺少 beat: ${b}——AI 是批量生成的，缺一拍就是生成失败`,
+          );
+        }
+      }
     }
   }
 }
@@ -152,16 +216,51 @@ export function validateContent(
  * 会把「上门要债」的台词混进「深夜回家」的对比页。调用方即使已经自己过滤过
  * 场景，这里也再滤一次——签名上就堵死这个误用，比依赖每个调用方记得过滤可靠。
  */
-export function linesForBeat(
-  performances: Performance[],
+export function takesForBeat(
+  takes: Take[],
   sceneId: string,
   beatId: string,
-): Array<{ performance: Performance; line: PerformanceLine }> {
-  const out: Array<{ performance: Performance; line: PerformanceLine }> = [];
-  for (const p of performances) {
-    if (p.sceneId !== sceneId) continue;
-    const line = p.lines.find((l) => l.beatId === beatId);
-    if (line) out.push({ performance: p, line });
+): Array<{ take: Take; line: TakeLine }> {
+  const out: Array<{ take: Take; line: TakeLine }> = [];
+  for (const t of takes) {
+    if (t.sceneId !== sceneId) continue;
+    const line = t.lines.find((l) => l.beatId === beatId);
+    if (line) out.push({ take: t, line });
   }
   return out;
+}
+
+/**
+ * 同一场戏、同一个身份（一个县或一个方言区）下的所有演绎。
+ *
+ * 返回数组而不是单份，是这次改模型的核心：一个地方可以有好几个人各说各的，
+ * 而**分歧本身是内容**——三个武城人给三个说法，那是代际差、村落差的真实记录，
+ * 不是数据脏了。语保的方法论是「每点选一个合格发音人代表该点」，一点一答案；
+ * 这里刻意不这么做，因为 owner 本人（武城人）说「感觉我一个人说的也不对」。
+ */
+export function takesFor(takes: Take[], sceneId: string, identity: string): Take[] {
+  return takes.filter((t) => t.sceneId === sceneId && (t.dialectId ?? t.placeCode) === identity);
+}
+
+/**
+ * 一次装好整个站的内容，并且**校验过**。
+ *
+ * 存在的理由：七个页面原先各自重复同一段四行装配（loadDialects / loadScenes /
+ * loadTakes / validateContent），加一种数据就要改七处，而漏改的那一处不会报错——
+ * 它只是少校验一层，然后带着坏数据静静构建成功。对比页当时就漏了 validateContent。
+ *
+ * 收口之后，「忘了传 places」这种事在类型层就不成立。
+ */
+export function loadSite(dataDir: string): {
+  scenes: Map<string, Scene>;
+  takes: Take[];
+  dialects: Map<string, Dialect>;
+  places: Map<string, Place>;
+} {
+  const dialects = loadDialects(dataDir);
+  const scenes = loadScenes(dataDir);
+  const takes = loadTakes(dataDir);
+  const places = loadPlaces(dataDir);
+  validateContent(scenes, takes, dialects, places);
+  return { scenes, takes, dialects, places };
 }

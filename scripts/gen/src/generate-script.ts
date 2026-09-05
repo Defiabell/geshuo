@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { stringify } from 'yaml';
 import { loadScenes } from '../../../src/lib/content';
 import { loadLexicon, buildPrompt, auditDraft } from './lexicon';
-import type { Performance, PerformanceLine, Scene } from '../../../src/lib/types';
+import type { Take, TakeLine, Scene } from '../../../src/lib/types';
 
 // fileURLToPath() 而不是 new URL(...).pathname——.pathname 不做百分号解码，
 // 路径里带空格或中文（这台机器的用户目录路径就可能含中文）会直接变成
@@ -18,7 +18,7 @@ const LEX_DIR = join(ROOT, 'scripts/gen/lexicons/');
  * 且条数相符。不通过就抛错、不写文件——避免坏数据先落盘成一个「看起来生成
  * 好了」的文件，等下一步跑 vitest/build 才暴露。
  */
-export function assertLinesMatchBeats(scene: Scene, lines: PerformanceLine[]): void {
+export function assertLinesMatchBeats(scene: Scene, lines: TakeLine[]): void {
   const beatIds = new Set(scene.beats.map((b) => b.id));
   const lineIds = new Set(lines.map((l) => l.beatId));
 
@@ -67,7 +67,7 @@ async function main() {
   const body = (await res.json()) as { content: Array<{ text: string }> };
   const text = body.content.map((c) => c.text).join('');
   const json = text.slice(text.indexOf('['), text.lastIndexOf(']') + 1);
-  const lines = JSON.parse(json) as PerformanceLine[];
+  const lines = JSON.parse(json) as TakeLine[];
 
   // 结构校验先行：beatId 对不齐就直接抛错，不写文件、不做词表审计。
   assertLinesMatchBeats(scene, lines);
@@ -85,7 +85,7 @@ async function main() {
     issues.forEach((i) => console.warn('  - ' + i));
   }
 
-  const performance: Performance = {
+  const take: Take = {
     id: `${sceneId}.${dialectId}`,
     sceneId,
     dialectId,
@@ -94,8 +94,8 @@ async function main() {
     lines,
   };
 
-  const out = join(DATA_DIR, 'performances', `${sceneId}.${dialectId}.yaml`);
-  writeFileSync(out, stringify(performance), 'utf8');
+  const out = join(DATA_DIR, 'takes', `${sceneId}.${dialectId}.yaml`);
+  writeFileSync(out, stringify(take), 'utf8');
   console.log(`✓ 写入 ${out}`);
   console.log('  记住：这是未校对稿，上线前请母语者过目。');
 }
