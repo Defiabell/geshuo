@@ -1,43 +1,57 @@
 ---
 import { join } from 'node:path';
-import Base from '../layouts/Base.astro';
-import { TURNSTILE_SITEKEY } from '../lib/config';
-import { loadSite } from '../lib/content';
-import { NO_SPEAKER } from '../lib/types';
+import Base from '../../layouts/Base.astro';
+import { TURNSTILE_SITEKEY } from '../../lib/config';
+import { loadSite } from '../../lib/content';
+import { NO_SPEAKER } from '../../lib/types';
 
-const DATA_DIR = join(process.cwd(), 'src', 'data');
-const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
+/**
+ * 一场戏一页。
+ *
+ * 原先八场戏、二十八个说话拍全铺在 /record/ 一页上，四万字节，滚不到底。
+ * 拆开之后每页只剩一场，而且 URL 可以直接分享——「你们那儿这句怎么说」
+ * 发出去就落在具体那一场上，而不是让人先滚过七场无关的戏。
+ */
+export async function getStaticPaths() {
+  const DATA_DIR = join(process.cwd(), 'src', 'data');
+  const { scenes, takes } = loadSite(DATA_DIR);
 
-// 每一拍给一句普通话参考——投稿人照着意思用自己的话说，而不是照着某个
-// 方言版本念。念别人的版本会把那个方言的措辞带进来，就不是他自己的话了。
-const list = Array.from(scenes.values()).map((scene) => ({
-  scene,
-  // 空拍（speakerRole: none）不列出来——那一拍没人说话，给个录音按钮
-  // 等于请人录一段空气，而且下面 mandarin 显示的是「门关上的声音」这种
-  // 舞台提示，照着念就更荒唐了。
-  beats: scene.beats
-    .filter((b) => b.speakerRole !== NO_SPEAKER)
-    .map((b) => {
-      const ref = takes.find((p) => p.sceneId === scene.id)?.lines.find((l) => l.beatId === b.id);
-      return { beat: b, role: scene.roles[b.speakerRole], mandarin: ref?.textMandarin ?? '' };
-    }),
-}));
+  return Array.from(scenes.values()).map((scene) => ({
+    params: { scene: scene.id },
+    props: {
+      scene,
+      // 空拍（speakerRole: none）不列出来——那一拍没人说话，给个录音按钮
+      // 等于请人录一段空气，而且下面 mandarin 显示的是「门关上的声音」这种
+      // 舞台提示，照着念就更荒唐了。
+      beats: scene.beats
+        .filter((b) => b.speakerRole !== NO_SPEAKER)
+        .map((b) => {
+          // 每一拍给一句普通话参考——投稿人照着意思用自己的话说，而不是照着
+          // 某个方言版本念。念别人的版本会把那个方言的措辞带进来，就不是他
+          // 自己的话了。
+          const ref = takes
+            .find((p) => p.sceneId === scene.id)
+            ?.lines.find((l) => l.beatId === b.id);
+          return { beat: b, role: scene.roles[b.speakerRole], mandarin: ref?.textMandarin ?? '' };
+        }),
+    },
+  }));
+}
+
+const { scene, beats } = Astro.props;
 ---
-<Base title="录一个真的 — 各说各话" description="用你自己的方言录一遍，直接在网页上传，不用走 GitHub。">
+<Base title={`录「${scene.title}」 — 各说各话`} description={scene.situation}>
   <header class="top">
-    <a class="home" href="/">← 各说各话</a>
-    <h1>录一个真的</h1>
-    <p class="lede">
-      站上现在全是 AI 合成的区级口音。你一开口，就带着你那个村的坐标——
-      <strong>那才是这个项目想要的东西</strong>。
-    </p>
+    <a class="home" href="/record/">← 换一场</a>
+    <h1>{scene.title}</h1>
+    <p class="lede">{scene.situation}</p>
   </header>
 
   <section class="who">
     <label>
       <span class="k">你是哪儿人 <em>必填</em></span>
       <input id="place" type="text" placeholder="山东德州 · 陵城区 · 糜镇" autocomplete="off" />
-      <span class="hint">越细越好。乡镇比县好，县比市好——录音会挂到你写的这个点上。</span>
+      <span class="hint">越细越好。乡镇比县好，县比市好——投稿会挂到你写的这个点上。</span>
     </label>
     <label>
       <span class="k">怎么找到你 <em>选填</em></span>
@@ -46,62 +60,56 @@ const list = Array.from(scenes.values()).map((scene) => ({
   </section>
 
   <section class="how">
-    <h2>怎么录</h2>
     <ol>
-      <li>看这一拍要表达什么意思（下面每条都给了普通话对照）。</li>
       <li><strong>别照着念</strong>——用你们那儿真会说的话说一遍，包括脏字。
         <a href="/swearing/">为什么脏话要留着 →</a></li>
       <li><strong>写一句、录一段，有一样就能交。</strong>
-        不想录声音，只把你们那儿的说法打出来，一样算数；
-        写不出字只录音，也一样算数——很多方言词本来就没有通行写法。</li>
+        不想录声音，只把说法打出来一样算数；写不出字只录音，也一样算数。</li>
+      <li><strong>不用全录完。</strong>只录你演得了的那个角色，剩下的留给别人。</li>
     </ol>
-    <p class="fine">
-      投稿只上传、不公开：会有人先看过听过，确认是本地说法，才会上站。
-      传上来的东西不会被别人直接访问到。同一个地方欢迎好几个人各填各的——
-      说法不一样不是错，那是代际和村落的真实差别，我们会把分歧一起显出来。
-    </p>
   </section>
 
   <div class="ts" id="ts-host" aria-label="人机验证"></div>
 
-  {list.map(({ scene, beats }) => (
-    <section class="scene" data-scene={scene.id}>
-      <h2>{scene.title}</h2>
-      <p class="sit">{scene.situation}</p>
-      {beats.map(({ beat, role, mandarin }) => (
-        <div class="beat" data-scene={scene.id} data-beat={beat.id}>
-          <div class="meta">
-            <span class="n">{String(beat.order).padStart(2, '0')}</span>
-            <span class="intent">{beat.intent}</span>
-            {role && <span class="role">{role.name}</span>}
-          </div>
-          {mandarin && <p class="ref">{mandarin}</p>}
-          <label class="say">
-            <span class="k">你们那儿怎么说</span>
-            <textarea class="said" rows="2" maxlength="300"
-              placeholder="写不出来的字用同音字凑就行，以音为准"></textarea>
-          </label>
-          <div class="ctl">
-            <button class="rec" type="button">● 开始录</button>
-            <label class="pick">
-              选个文件
-              <input type="file" accept="audio/*" hidden />
-            </label>
-            <audio class="prev" controls hidden></audio>
-            <button class="send" type="button" hidden>提交这一拍</button>
-            <span class="status" role="status"></span>
-          </div>
+  <section class="scene">
+    {beats.map(({ beat, role, mandarin }) => (
+      <div class="beat" data-scene={scene.id} data-beat={beat.id}>
+        <div class="meta">
+          <span class="n">{String(beat.order).padStart(2, '0')}</span>
+          <span class="intent">{beat.intent}</span>
+          {role && <span class="role">{role.name}</span>}
         </div>
-      ))}
-    </section>
-  ))}
+        {mandarin && <p class="ref">{mandarin}</p>}
+        <label class="say">
+          <span class="k">你们那儿怎么说</span>
+          <textarea class="said" rows="2" maxlength="300"
+            placeholder="写不出来的字用同音字凑就行，以音为准"></textarea>
+        </label>
+        <div class="ctl">
+          <button class="rec" type="button">● 开始录</button>
+          <label class="pick">
+            选个文件
+            <input type="file" accept="audio/*" hidden />
+          </label>
+          <audio class="prev" controls hidden></audio>
+          <button class="send" type="button" hidden>提交这一拍</button>
+          <span class="status" role="status"></span>
+        </div>
+      </div>
+    ))}
+  </section>
+
+  <p class="fine">
+    投稿只上传、不公开：会有人先看过听过，确认是本地说法，才会上站。
+    同一个地方欢迎好几个人各填各的——说法不一样不是错，那是代际和村落的真实差别。
+  </p>
 </Base>
 
 <script define:vars={{ sitekey: TURNSTILE_SITEKEY }}>
   window.__SITEKEY__ = sitekey;
 </script>
 <script>
-  import { initRecorder } from '../scripts/recorder';
+  import { initRecorder } from '../../scripts/recorder';
   // sitekey 由上面那段 define:vars 的内联脚本挂在 window 上——
   // define:vars 不作用于模块脚本，模块里直接写 sitekey 会是 undefined
   initRecorder(document, (window as unknown as { __SITEKEY__?: string }).__SITEKEY__);

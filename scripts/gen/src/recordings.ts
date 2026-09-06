@@ -117,6 +117,40 @@ async function pull() {
     }
 
     const m = o.custom_metadata ?? {};
+
+    // 自出场景：body 是一小段 JSON（标题/处境/拍），不是音频。
+    // 这类投稿最有价值也最该细看——站上现有的戏都是编的，本地人出的题才可能
+    // 是「我们那儿真会为这个吵」。
+    if (m.kind === 'scene') {
+      let sp: { title?: string; situation?: string; beats?: Array<Record<string, string>> } = {};
+      try { sp = JSON.parse(readFileSync(dest, 'utf8')); } catch { /* 坏 JSON 就当空的 */ }
+      rows.push(`
+<article class="rec scene" data-id="${esc(id)}" data-key="${esc(o.key)}">
+  <header>
+    <span class="id">${esc(id)}</span>
+    <span class="place">${esc(m.place || '（没填地点）')}</span>
+    <span class="when">${esc(o.last_modified.replace('T', ' ').slice(0, 16))}</span>
+    <span class="size">自出场景</span>
+  </header>
+  <div class="where">${esc(sp.title ?? '（没写标题）')}</div>
+  <p class="ref">${esc(sp.situation ?? '')}</p>
+  <ol class="beats">${(sp.beats ?? [])
+    .map((b) => `<li>${b.who ? `<i>${esc(b.who)}</i> ` : ''}${esc(b.intent ?? '')}${
+      b.said ? `<br><b>${esc(b.said)}</b>` : ''
+    }</li>`)
+    .join('')}</ol>
+  <div class="meta">
+    ${m.contact ? `联系：${esc(m.contact)}　` : ''}${m.verified === 'no' ? '⚠ 没过人机验证' : ''}
+  </div>
+  <div class="acts">
+    <button class="keep" type="button">采用</button>
+    <button class="drop" type="button">丢弃</button>
+    <span class="mark"></span>
+  </div>
+</article>`);
+      continue;
+    }
+
     const scene = m.sceneId ? scenes.get(m.sceneId) : undefined;
     const beat = scene?.beats.find((b) => b.id === m.beatId);
     const ai = m.sceneId && m.beatId ? aiVersionsFor(m.sceneId, m.beatId) : [];
@@ -164,6 +198,12 @@ header{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;font-size:12.5p
 .place{font-size:15px;color:#2A1E14;font-weight:600}
 .where{font-size:13px;color:#6B5540;margin:6px 0 4px}
 .said{font-size:13.5px;color:#6B5540;margin:0 0 10px;border-left:2px solid #E0CFA8;padding-left:10px}
+.ref{font-size:12.5px;color:#8A8177;margin:0 0 10px}
+.noaudio{font-size:12.5px;color:#8A8177;font-style:italic}
+.scene{border-left:3px solid #B7241F}
+.beats{font-size:13px;color:#4A4038;margin:0 0 10px;padding-left:20px;line-height:1.85}
+.beats i{font-style:normal;color:#8A8177;font-size:11.5px;border:1px solid #E0DACE;padding:0 5px;margin-right:5px}
+.beats b{color:#1D1B19;font-weight:500}
 .play{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .play b{font-size:12px;color:#B7241F;min-width:2.6em}
 .ai{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}

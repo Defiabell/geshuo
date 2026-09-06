@@ -1,0 +1,124 @@
+---
+import { join } from 'node:path';
+import Base from '../../layouts/Base.astro';
+import { loadSite } from '../../lib/content';
+import { identityOf } from '../../lib/identity';
+import { NO_SPEAKER } from '../../lib/types';
+
+/**
+ * 先挑一场，再录。
+ *
+ * 这一页原先是全部八场戏、二十八个说话拍铺在一起，四万字节。人打开之后
+ * 第一件事是滚，而不是开口。
+ *
+ * 顺带补上一直缺的那个维度：**进度**。哪一场已经有几个地方填了、还缺几拍，
+ * 一眼能看见——「还缺 4 拍」比「录一个真的」具体得多，也就更容易让人动手。
+ */
+const DATA_DIR = join(process.cwd(), 'src', 'data');
+const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
+
+const cards = Array.from(scenes.values()).map((scene) => {
+  const speaking = scene.beats.filter((b) => b.speakerRole !== NO_SPEAKER);
+  const human = takes.filter((t) => t.sceneId === scene.id && t.source === 'human');
+  const covered = new Set(human.flatMap((t) => t.lines.map((l) => l.beatId)));
+  const spots = [...new Set(human.map((t) => identityOf(t, dialects, places).name))];
+  return {
+    scene,
+    total: speaking.length,
+    missing: speaking.filter((b) => !covered.has(b.id)).length,
+    spots,
+    // 排序服务于这一页的目的——让人动手。所以：
+    // 1. 已经齐了的沉底（还缺的才需要人）；
+    // 2. 一句话挑战优先（一拍就能交，门槛最低）；
+    // 3. 同组内拍少的在前。
+    weight:
+      (speaking.filter((b) => !covered.has(b.id)).length === 0 ? 100000 : 0) +
+      (scene.weekly ? 0 : 1000) +
+      speaking.length,
+  };
+}).sort((a, b) => a.weight - b.weight);
+
+const totalMissing = cards.reduce((n, c) => n + c.missing, 0);
+---
+<Base title="录一个真的 — 各说各话" description="挑一场戏，用你自己的方言说一遍。写一句或录一段都算，不用注册。">
+  <header class="top">
+    <a class="home" href="/">← 各说各话</a>
+    <h1>录一个真的</h1>
+    <p class="lede">
+      站上现在全是 AI 合成的区级口音。你一开口，就带着你那个村的坐标——
+      <strong>那才是这个项目想要的东西</strong>。
+    </p>
+    <p class="count">全站还缺 <b>{totalMissing}</b> 拍。挑一场顺眼的，写一句或录一段都算。</p>
+  </header>
+
+  <ul class="grid">
+    {cards.map((c) => (
+      <li class={c.missing === 0 ? 'card done' : 'card'}>
+        <a href={`/record/${c.scene.id}/`}>
+          <div class="hd">
+            <h2>{c.scene.title}</h2>
+            <span class="len">{c.total === 1 ? '一句话' : `${c.total} 拍`}</span>
+          </div>
+          <p class="sit">{c.scene.situation}</p>
+          <div class="bar" aria-hidden="true">
+            {Array.from({ length: c.total }).map((_, i) => (
+              <i class={i < c.total - c.missing ? 'on' : ''}></i>
+            ))}
+          </div>
+          <p class="st">
+            {c.missing === 0
+              ? <span class="ok">这一场齐了</span>
+              : <span>还缺 <b>{c.missing}</b> 拍</span>}
+            {c.spots.length > 0 && <span class="who2">　已有 {c.spots.join('、')}</span>}
+          </p>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <section class="mine">
+    <h2>没有一场说到你想说的？</h2>
+    <p>
+      这些戏都是我编的，未必是你们那儿真会吵的架。
+      <a href="/propose/">自己出一场 →</a>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
+  .lede { max-width: 34em; margin: 0; color: var(--ink-2); }
+  .lede strong { color: var(--cut-lit); }
+  .count { font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; color: var(--dust); margin: 16px 0 0; }
+  .count b { color: var(--cut-lit); font-variant-numeric: tabular-nums; }
+
+  .grid { list-style: none; padding: 0; margin: 34px 0 0; display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 2px; }
+  .card a { display: block; height: 100%; padding: 18px 18px 16px; text-decoration: none;
+            background: var(--night-2); color: inherit; transition: background .18s; }
+  .card a:hover { background: var(--paper); }
+  .card a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: -2px; }
+  .hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 21px; color: var(--cut); margin: 0; }
+  .len { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--dust); letter-spacing: .06em; white-space: nowrap; }
+  .sit { font-size: 14px; color: var(--ink-2); margin: 8px 0 14px; line-height: 1.65; }
+
+  /* 进度条按拍分格，不是百分比——「还缺 4 拍」比「完成 20%」具体，
+     而具体才让人动手 */
+  .bar { display: flex; gap: 3px; margin-bottom: 9px; }
+  .bar i { flex: 1; height: 4px; background: var(--rule); border-radius: 1px; }
+  .bar i.on { background: var(--cut-lit); }
+  .st { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); margin: 0; }
+  .st b { color: var(--cut-lit); font-variant-numeric: tabular-nums; }
+  .st .ok { color: var(--cut); }
+  .who2 { color: var(--dust); }
+  .done .bar i.on { background: var(--cut); }
+
+  .mine { margin: 46px 0 0; border-top: 1px solid var(--rule); padding-top: 20px; max-width: 36em; }
+  .mine h2 { font-size: 20px; margin-bottom: 8px; }
+  .mine p { color: var(--ink-2); margin: 0; }
+  .mine a { color: var(--cut-lit); }
+</style>

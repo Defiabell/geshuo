@@ -53,7 +53,7 @@ const lineOf = (beatId: string) => take.lines.find((l) => l.beatId === beatId)!;
     sceneId={scene.id}
     currentId={dialect.id}
   />
-  <GrainNotice dialect={dialect} source={take.source} transcript={take.transcript} />
+  <GrainNotice dialect={dialect} source={take.source} transcript={take.transcript} sceneId={scene.id} />
 
   <div class="bar">
     <button class="btn-play" id="playAll">▶ 从头演一遍</button>

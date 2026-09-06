@@ -1,0 +1,146 @@
+---
+import Base from '../layouts/Base.astro';
+import { TURNSTILE_SITEKEY } from '../lib/config';
+---
+<Base title="自己出一场 — 各说各话" description="站上的戏都是编的。你们那儿真会吵的架，你来出题。">
+  <header class="top">
+    <a class="home" href="/record/">← 回到选场景</a>
+    <h1>自己出一场</h1>
+    <p class="lede">
+      站上这些戏都是我编的，未必是你们那儿真会吵的架。
+      <strong>你出题，别人接着填各地版本。</strong>
+    </p>
+  </header>
+
+  <section class="how">
+    <p class="fine">
+      好的场面有三个特征：<b>全国人都经历过</b>（所以别处的人接得上）、
+      <b>有情绪</b>（吵架、赔笑、憋着火，比「问路」有戏得多）、
+      <b>一句话就能听出地方差别</b>。骂人的粗口收，针对族群、性别、地域、残障的仇恨话不收。
+    </p>
+  </section>
+
+  <section class="who">
+    <label>
+      <span class="k">你是哪儿人 <em>必填</em></span>
+      <input id="place" type="text" placeholder="山东德州 · 陵城区 · 糜镇" autocomplete="off" />
+    </label>
+    <label>
+      <span class="k">怎么找到你 <em>选填</em></span>
+      <input id="contact" type="text" placeholder="邮箱 / GitHub 用户名" autocomplete="off" />
+    </label>
+    <label>
+      <span class="k">这场戏叫什么 <em>必填</em></span>
+      <input id="title" type="text" maxlength="40" placeholder="比如「插队」「催婚」「菜市场砍价」" autocomplete="off" />
+    </label>
+    <label>
+      <span class="k">什么情况 <em>必填</em></span>
+      <input id="situation" type="text" maxlength="200" placeholder="一句话说清处境。比如「排了二十分钟，有人直接插到你前头」" autocomplete="off" />
+    </label>
+  </section>
+
+  <section class="beats">
+    <h2>一拍一拍来</h2>
+    <p class="hint">
+      一拍就是一个人说一句。只写一拍也行——<a href="/weekly/">一句话挑战</a>就是一拍的戏。
+      「你们那儿怎么说」可以留空，让别人来填。
+    </p>
+    <div id="beats"></div>
+    <button id="add" type="button">＋ 再加一拍</button>
+  </section>
+
+  <div class="ts" id="ts-host" aria-label="人机验证"></div>
+
+  <div class="act">
+    <button id="send" type="button">提交这一场</button>
+    <span id="status" class="status" role="status"></span>
+  </div>
+
+  <p class="fine last">
+    提交的东西不公开、不自动上站：会有人看过之后决定要不要收。
+    收了的话这场戏会出现在录音页上，等各地的人来填。
+  </p>
+</Base>
+
+<script define:vars={{ sitekey: TURNSTILE_SITEKEY }}>
+  window.__SITEKEY__ = sitekey;
+</script>
+<script>
+  import { initPropose } from '../scripts/propose';
+  initPropose(document, (window as unknown as { __SITEKEY__?: string }).__SITEKEY__);
+</script>
+
+
+<!--
+  这一块必须是 is:global。
+
+  拍行是 propose.ts 在运行时用 innerHTML 造出来的，而 Astro 的 <style> 默认
+  scoped——它靠给模板里的元素加 data-astro-cid-* 属性来生效。运行时新建的
+  元素没有那个属性，于是一条样式都套不上：输入框挤成一排、序号和删除按钮
+  黏在一起。截图之前完全看不出来，构建和类型检查都是绿的。
+-->
+<style is:global>
+  #beats { display: grid; gap: 16px; }
+  #beats .row { display: grid; gap: 8px; border-left: 2px solid var(--rule); padding-left: 14px; }
+  #beats .rh { display: flex; align-items: center; justify-content: space-between; }
+  #beats .n { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust);
+              font-variant-numeric: tabular-nums; letter-spacing: .1em; }
+  #beats .del { font-size: 18px; line-height: 1; background: none; border: none; color: var(--dust);
+                cursor: pointer; padding: 2px 8px; }
+  #beats .del:hover { color: var(--cut-lit); }
+  #beats input, #beats textarea {
+    font: inherit; font-size: 15px; padding: 11px 14px; width: 100%; box-sizing: border-box;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg);
+  }
+  #beats textarea { resize: vertical; line-height: 1.7; }
+  #beats input:focus-visible, #beats textarea:focus-visible {
+    outline: 2px solid var(--cut-lit); outline-offset: 1px;
+  }
+  #beats ::placeholder { color: var(--dust); font-size: 14px; }
+</style>
+
+<style>
+  .top { padding: 56px 0 8px; }
+  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home:hover { color: var(--cut-lit); }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 10px; }
+  .lede { max-width: 34em; margin: 0; color: var(--ink-2); }
+  .lede strong { color: var(--cut-lit); }
+
+  .how { margin: 26px 0 0; max-width: 40em; }
+  .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; margin: 0; line-height: 1.8; }
+  .fine b { color: var(--ink-2); font-weight: 500; }
+  .fine.last { margin-top: 26px; max-width: 40em; }
+
+  .who { display: grid; gap: 14px; margin: 30px 0 8px; max-width: 40em; }
+  .who label { display: flex; flex-direction: column; gap: 6px; }
+  .k { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); letter-spacing: .06em; }
+  .k em { font-style: normal; color: var(--cut); font-size: 11.5px; margin-left: 6px; }
+  input, textarea {
+    font: inherit; font-size: 15px; padding: 11px 14px; width: 100%; box-sizing: border-box;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg);
+  }
+  input:focus-visible, textarea:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
+  textarea { resize: vertical; line-height: 1.7; }
+  ::placeholder { color: var(--dust); font-size: 14px; }
+
+  .beats { margin: 38px 0 0; max-width: 40em; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--cut); margin: 0 0 8px; }
+  .hint { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); margin: 0 0 18px; line-height: 1.8; }
+  .hint a { color: var(--cut-lit); }
+
+  button { font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; cursor: pointer;
+           border: 1px solid var(--cut); background: transparent; color: var(--cut);
+           padding: 9px 18px; border-radius: 2px; transition: background .18s, color .18s; }
+  button:hover:not([disabled]) { background: var(--cut); color: var(--paper); }
+  button[disabled] { opacity: .45; cursor: default; }
+  #add { margin-top: 16px; border-style: dashed; }
+
+  .ts { margin: 26px 0 6px; }
+  .act { display: flex; align-items: center; gap: 14px; margin: 10px 0 0; }
+  #send { background: var(--cut); color: var(--paper); padding: 12px 24px; font-size: 14.5px; }
+  #send:hover:not([disabled]) { background: var(--cut-lit); border-color: var(--cut-lit); }
+  .status { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .status.ok { color: var(--cut); }
+  .status.bad { color: var(--cut-lit); }
+</style>

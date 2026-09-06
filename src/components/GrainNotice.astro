@@ -1,8 +1,12 @@
 ---
-import { levelLabel } from '../lib/dialect-tree';
-import type { Dialect, TakeSource, Transcript } from '../lib/types';
-interface Props { dialect: Dialect; source: TakeSource; transcript?: Transcript }
-const { dialect, source, transcript } = Astro.props;
+import type { Identity } from '../lib/identity';
+import type { TakeSource, Transcript } from '../lib/types';
+// dialect 收的是 Identity 不是 Dialect：一列可能来自方言区，也可能来自某个县。
+// 页面从 2026-09-05 起传的就是 Identity，只是 .astro 不过 tsc，类型写错了也没人报。
+interface Props { dialect: Identity; source: TakeSource; transcript?: Transcript; sceneId?: string }
+const { dialect, source, transcript, sceneId } = Astro.props;
+// 「录一个真的」落到当前这一场，而不是让人回到选择页从八场里再找一遍
+const recordHref = sceneId ? `/record/${sceneId}/` : '/record/';
 // validateContent() 已硬性拦截 TTS 挂在 point/subcluster 级方言（见 src/lib/content.ts），
 // 所以能通过校验的 TTS 演绎，level 必然不是 'point'——后半个条件恒为真，去掉。
 const isCoarse = source === 'tts';
@@ -13,10 +17,10 @@ const loose = source === 'human' && transcript === 'approximate';
 {isCoarse && (
   <div class="grain">
     <p>
-      <strong>这是{levelLabel(dialect.level)}级的合成语音，不代表任何具体县市。</strong>
+      <strong>这是{dialect.levelLabel}级的合成语音，不代表任何具体县市。</strong>
       模型给不出县域口音，只能给一个笼统的腔调。
     </p>
-    <a class="cta" href="/record/">你是本地人？录一个真的</a>
+    <a class="cta" href={recordHref}>你是本地人？录一个真的</a>
   </div>
 )}
 {loose && (

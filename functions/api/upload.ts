@@ -36,6 +36,12 @@ const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_TEXT = 200;
 /** 投稿人自己写的那句话。一拍就是一句，200 字够用；给到 300 留点余量 */
 const MAX_SAID = 300;
+/** 自出场景：标题、处境、每拍的意图。上限压得紧——这是自由文本最多的一条路径 */
+const MAX_TITLE = 40;
+const MAX_SITUATION = 200;
+const MAX_INTENT = 100;
+/** 一场戏最多几拍。六拍是站上现有最长的戏，八拍留点余量，再多就不是一场戏了 */
+const MAX_BEATS = 8;
 /** 过了人机验证的，每 IP 每天可以传这么多 */
 const IP_PER_DAY = 30;
 /**
@@ -148,6 +154,48 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   /**
+   * 自出场景走同一个口子。
+   *
+   * 分开做一个 /api/scene 看着更干净，实际会立刻长出两套配额、两套人机验证、
+   * 两个审核队列——审的时候要在两个地方来回对，第一天就会漏。这里只在
+   * 「收什么」和「怎么存」两处分叉，配额、限流、总闸、开关全部共用。
+   */
+  const kind = clean(form.get('kind')) === 'scene' ? 'scene' : 'take';
+
+  let scenePayload = '';
+  if (kind === 'scene') {
+    const title = cleanText(form.get('title'), MAX_TITLE);
+    const situation = cleanText(form.get('situation'), MAX_SITUATION);
+    if (!title) return json({ error: '给这场戏起个名字' }, 400);
+    if (!situation) return json({ error: '写一句处境——什么情况下会说这些话' }, 400);
+
+    let rawBeats: unknown;
+    try {
+      rawBeats = JSON.parse(typeof form.get('beats') === 'string' ? (form.get('beats') as string) : '[]');
+    } catch {
+      return json({ error: '拍的格式不对' }, 400);
+    }
+    if (!Array.isArray(rawBeats)) return json({ error: '拍的格式不对' }, 400);
+
+    const beats = rawBeats
+      .slice(0, MAX_BEATS)
+      .map((b) => {
+        const o = (b ?? {}) as Record<string, unknown>;
+        return {
+          who: cleanText(o.who, MAX_TITLE),
+          intent: cleanText(o.intent, MAX_INTENT),
+          said: cleanText(o.said, MAX_SAID),
+        };
+      })
+      .filter((b) => b.intent || b.said);
+
+    if (beats.length === 0) {
+      return json({ error: '至少写一拍——这一拍要说什么，或者你们那儿怎么说' }, 400);
+    }
+    scenePayload = JSON.stringify({ title, situation, beats });
+  }
+
+  /**
    * **文字与录音是两条独立通道，各自都能单独成立。**
    *
    * 只填字：很多人不愿意录自己的声音，但愿意打字告诉你「我们那儿说 X」。
@@ -160,7 +208,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const audio = rawAudio instanceof File && rawAudio.size > 0 ? rawAudio : null;
   const said = cleanText(form.get('said'), MAX_SAID);
 
-  if (!audio && !said) {
+  if (kind === 'take' && !audio && !said) {
     return json({ error: '写一句你们那儿的说法，或者录一段——两样至少要有一样' }, 400);
   }
 
@@ -216,12 +264,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   // 审核台——分成两套的话，审的时候要在两个地方来回对，第一天就会漏。
   const ext = audio ? extFor(audio.type) : 'json';
   const key = `uploads/${day}/${hash}-${id}.${ext}`;
-  const body = audio ? audio.stream() : JSON.stringify({ said, place, sceneId, beatId });
+  const body = audio
+    ? audio.stream()
+    : scenePayload || JSON.stringify({ said, place, sceneId, beatId });
   const contentType = audio ? audio.type : 'application/json';
 
   await env.RECORDINGS.put(key, body, {
     httpMetadata: { contentType },
     customMetadata: {
+      kind,
       place,
       sceneId,
       beatId,
