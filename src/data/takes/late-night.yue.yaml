@@ -5,35 +5,35 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 而家几点啦你先返嚟？你仲知唔知返屋企条路点行啊？
-    textMandarin: 现在几点了你才回来？你还知不知道回家的路怎么走啊？
+    textDialect: 而家几点啦你先返嚟？你…… 你仲知唔知返屋企条路点行啊？
+    textMandarin: 现在几点了你才回来？你…… 你还知不知道回家的路怎么走？
     note: 先＝才，语序与普通话相反，「几点啦你先返嚟」把「才」放在动词前。返屋企＝回家。
     audio: /audio/late-night.yue/b1.mp3
-    durationMs: 4720
+    durationMs: 5360
   - beatId: b2
-    textDialect: 哎呀加班啰，同你讲咗几多次啦。
-    textMandarin: 哎呀加班嘛，跟你说过多少次了。
+    textDialect: 哎呀，加班啰，加班。同你讲咗几多次啦。
+    textMandarin: 哎呀，加班，加班。跟你说了多少次了。
     note: 咗＝了（完成体），几多＝多少。这一拍各地都平淡，方言差异最小。
     audio: /audio/late-night.yue/b2.mp3
-    durationMs: 3200
+    durationMs: 4960
   - beatId: b3
-    textDialect: 加班？上次你又话加班，我一问你同事，人哋早就走咗！
-    textMandarin: 加班？上次你也说加班，我一问你同事，人家早就走了！
+    textDialect: 加班？上次你又话加班。我一问你同事，人哋早就走咗！
+    textMandarin: 加班？上次你也说加班。我一问你同事，人家早就走了！
     note: 话＝说，人哋＝人家。翻旧账是跨方言的通用结构。
     audio: /audio/late-night.yue/b3.mp3
-    durationMs: 5600
+    durationMs: 5120
   - beatId: b4
     textDialect: 你查我岗啊而家？
     textMandarin: 你现在是在查我的岗啊？
     note: 「而家」放句末是粤语常见的语序，普通话得放句首。
     audio: /audio/late-night.yue/b4.mp3
-    durationMs: 1920
+    durationMs: 1360
   - beatId: b5
-    textDialect: 得，你以后唔好返嚟啦，我睇你几大本事！
-    textMandarin: 行，你以后别回来了，我看你有多大本事！
+    textDialect: 得。你以后就唔好返嚟啦，我睇你几大本事！
+    textMandarin: 行。你以后就别回来了，我看你多大本事！
     note: 唔好＝别，睇＝看，几大＝多大。放狠话永远是反话，这点各地一致。
     audio: /audio/late-night.yue/b5.mp3
-    durationMs: 3200
+    durationMs: 4000
   - beatId: b6
     textDialect: ——
     textMandarin: 没人说话。门关上的声音。

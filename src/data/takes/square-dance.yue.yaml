@@ -5,35 +5,35 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 阿姨，九点半喇，音响细声啲得唔得啊？我屋企个仔听日仲要返学。
-    textMandarin: 阿姨，九点半了，音响小声点行不行？我家孩子明天还要上学。
+    textDialect: 阿姨…… 阿姨，九点半喇，音响细声啲得唔得啊？我屋企个仔听日仲要返学。
+    textMandarin: 阿姨…… 阿姨，九点半了，音响小声点行吗？我家孩子明天还要上学。
     note: 细声啲＝小声点，得唔得＝行不行，屋企＝家，个仔＝儿子，听日＝明天，返学＝上学。
     audio: /audio/square-dance.yue/b1.mp3
-    durationMs: 6080
+    durationMs: 7200
   - beatId: b2
     textDialect: 咩话？呢度系公共地方，我哋跳我哋嘅，碍住你咩事啊？
     textMandarin: 什么话？这里是公共场所，我们跳我们的，碍着你什么事了？
     note: 呢度＝这里，我哋＝我们，碍住＝碍着，咩事＝什么事。
     audio: /audio/square-dance.yue/b2.mp3
-    durationMs: 6000
+    durationMs: 4480
   - beatId: b3
     textDialect: 公共地方都有时间㗎啦？十点之后扰民系犯法㗎，你唔知咩？
     textMandarin: 公共场所也有时间限制吧？十点以后扰民是犯法的，你不知道吗？
     note: 㗎啦／㗎＝语气助词（表示理所当然），唔知咩＝不知道吗。
     audio: /audio/square-dance.yue/b3.mp3
-    durationMs: 6320
+    durationMs: 5600
   - beatId: b4
     textDialect: 哦，仲同我讲法律？我哋老人家做运动碍住边个啊？后生仔火气咁大！
     textMandarin: 哦，还跟我讲法律？我们老人家做运动碍着谁了？年轻人火气这么大！
     note: 仲＝还，边个＝谁，后生仔＝年轻人，咁＝这么。
     audio: /audio/square-dance.yue/b4.mp3
-    durationMs: 7200
+    durationMs: 8160
   - beatId: b5
     textDialect: 好，你哋继续跳。我而家就报警，睇系你音响大声定系警车大声。
     textMandarin: 好，你们继续跳。我现在就报警，看是你音响大声还是警车大声。
     note: 而家＝现在，睇系…定系…＝看是…还是…（粤语的选择疑问句式）。
     audio: /audio/square-dance.yue/b5.mp3
-    durationMs: 5600
+    durationMs: 5840
   - beatId: b6
     textDialect: ——
     textMandarin: 音乐没停，反而更大声了。

@@ -5,17 +5,17 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 开门！你家又漏水了！我家棚顶淌得跟下雨似的，你个瘪犊子装死呢？
-    textMandarin: 开门！你家又漏水了！我家天花板淌得跟下雨一样，你这混蛋装死呢？
+    textDialect: 开门！开门！你家又漏水了！我家棚顶淌得跟下雨似的，你个瘪犊子装死呢？
+    textMandarin: 开门！开门！你家又漏水了！我家天花板淌得跟下雨似的，你这混蛋装死呢？
     note: 棚顶＝天花板。「瘪犊子」是东北话最有代表性的一个骂词，比「熊玩意儿」重，比「王八犊子」轻。
     audio: /audio/leak.dongbei/b1.mp3
-    durationMs: 7560
+    durationMs: 8040
   - beatId: b2
-    textDialect: 漏啥水啊？我家好好的，一滴没有。是不是你自己整的赖我身上？
-    textMandarin: 漏什么水啊？我家好好的，一滴没有。是不是你自己弄的赖我身上？
+    textDialect: 漏啥水啊？我家好好的，一滴没有…… 是不是你自己整的赖我身上？
+    textMandarin: 漏什么水？我家好好的，一滴没有…… 是不是你自己弄的赖我身上？
     note: 整＝弄，是东北话覆盖面最广的一个动词，几乎能替代所有「做/弄/搞」。
     audio: /audio/leak.dongbei/b2.mp3
-    durationMs: 5568
+    durationMs: 5496
   - beatId: b3
     textDialect: 上回就这么说的！说修说修，仨月了修个屁！你那嘴是不是拿浆糊粘的？
     textMandarin: 上次就这么说的！说修说修，三个月了修个屁！你那嘴是不是拿浆糊粘的？

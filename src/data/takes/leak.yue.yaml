@@ -5,35 +5,35 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 开门啊！你哋屋企又漏水啦！我天花板滴到成条河噉，扑街你扮死係咪？
-    textMandarin: 开门啊！你们家又漏水了！我天花板滴得像条河一样，你这扑街装死是不是？
+    textDialect: 开门啊！开门！你哋屋企又漏水啦！我天花板滴到成条河噉，扑街你扮死係咪？
+    textMandarin: 开门！开门！你家又漏水了！我天花板滴得跟条河似的，你这扑街装死是不是？
     note: 你哋＝你们，屋企＝家，噉＝这样，係咪＝是不是。「扑街」是粤语流传最广的骂词，字面是仆倒街头。
     audio: /audio/leak.yue/b1.mp3
-    durationMs: 6160
+    durationMs: 6640
   - beatId: b2
-    textDialect: 漏乜水啊？我屋企好地地，一滴都冇。係咪你自己搞出嚟赖我啊？
-    textMandarin: 漏什么水啊？我家好好的，一滴都没有。是不是你自己弄出来赖我啊？
+    textDialect: 漏乜水啊？我屋企好地地，一滴都冇…… 係咪你自己搞出嚟赖我啊？
+    textMandarin: 漏什么水？我家好好的，一滴都没有…… 是不是你自己弄的赖我？
     note: 乜＝什么，好地地＝好端端，冇＝没有，出嚟＝出来。
     audio: /audio/leak.yue/b2.mp3
-    durationMs: 6080
+    durationMs: 6560
   - beatId: b3
     textDialect: 上次都係噉讲！话修话修，三个月啦修咗条毛！你把口係咪痴埋嘅？
     textMandarin: 上次也是这么说！说修说修，三个月了修了个屁！你那张嘴是不是黏住了？
     note: 话＝说，咗＝了，「条毛」＝个屁，把口＝那张嘴，痴埋＝黏住（此处指嘴上说说不算数）。
     audio: /audio/leak.yue/b3.mp3
-    durationMs: 6400
+    durationMs: 5680
   - beatId: b4
     textDialect: 哎吔你呢个人点解咁唔讲理㗎！可能係你自己防水冇做好啦，屌，赖到我度！
     textMandarin: 哎哟你这人怎么这么不讲理！可能是你自己防水没做好，赖到我头上！
     note: 呢个＝这个，点解＝为什么，咁＝这么，赖到我度＝赖到我这儿。「屌」在粤语里是高频发狠词，语气重于普通话的「操」。
     audio: /audio/leak.yue/b4.mp3
-    durationMs: 9360
+    durationMs: 7200
   - beatId: b5
     textDialect: 得喇，你劲。呢单嘢我唔同你嘈啦，管理处、法庭你拣，睇下边个瘀啲！
     textMandarin: 行了，你厉害。这件事我不跟你吵了，物业、法院你挑，看谁更丢人！
     note: 呢单嘢＝这件事，嘈＝吵，拣＝挑，睇下＝看看，边个＝谁，瘀＝丢脸。
     audio: /audio/leak.yue/b5.mp3
-    durationMs: 5760
+    durationMs: 5920
   - beatId: b6
     textDialect: ——
     textMandarin: 门摔上。楼道里只剩回声。

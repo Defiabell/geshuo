@@ -5,11 +5,11 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 孃孃，都九点半咯，音响关小点要得不？我屋头娃儿明天还要上学。
-    textMandarin: 阿姨，都九点半了，音响关小点行不行？我家孩子明天还要上学。
+    textDialect: 孃孃…… 孃孃，都九点半咯，音响关小点要得不？我屋头娃儿明天还要上学。
+    textMandarin: 阿姨…… 阿姨，都九点半了，音响关小点行吗？我家孩子明天还要上学。
     note: 孃孃＝对中老年女性的称呼（川渝日常用词），屋头＝家里，娃儿＝孩子，要得不＝行不行。
     audio: /audio/square-dance.chengyu/b1.mp3
-    durationMs: 6000
+    durationMs: 8160
   - beatId: b2
     textDialect: 咋子嘛？这是公共场所，我们跳我们的，碍到你啥子事了？
     textMandarin: 怎么了？这是公共场所，我们跳我们的，碍着你什么事了？
@@ -21,19 +21,19 @@ lines:
     textMandarin: 公共场所也得看时间吧？十点以后扰民是犯法的，你不知道？
     note: 晓得＝知道，是西南官话最有辨识度的词之一。
     audio: /audio/square-dance.chengyu/b3.mp3
-    durationMs: 5920
+    durationMs: 5120
   - beatId: b4
     textDialect: 哟，还跟我讲起法来了？我们老太婆锻炼身体碍到哪个了？你年纪轻轻火气恁个大！
     textMandarin: 哟，还跟我讲起法律了？我们老太婆锻炼身体碍着谁了？你年纪轻轻火气这么大！
     note: 哪个＝谁，恁个＝这么（川渝的「恁个」是程度词，跟冀鲁的「恁」同形不同义）。
     audio: /audio/square-dance.chengyu/b4.mp3
-    durationMs: 6400
+    durationMs: 7520
   - beatId: b5
     textDialect: 要得，你们接到跳。我这就打一一〇，看是你音响吵还是警车吵。
     textMandarin: 行，你们接着跳。我这就打110，看是你音响吵还是警车吵。
     note: 要得＝行，接到＝接着（「到」是持续体标记）。
     audio: /audio/square-dance.chengyu/b5.mp3
-    durationMs: 6880
+    durationMs: 6720
   - beatId: b6
     textDialect: ——
     textMandarin: 音乐没停，反而更大声了。

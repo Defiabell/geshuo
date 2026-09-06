@@ -5,11 +5,11 @@ source: tts
 verification: unverified
 lines:
   - beatId: b1
-    textDialect: 大姨，都九点半了，音响小点儿行不？我家孩子明儿还上学呢。
-    textMandarin: 大姨，都九点半了，音响小点行不行？我家孩子明天还上学呢。
+    textDialect: 大姨…… 大姨，都九点半了，音响小点儿行不？我家孩子明儿还上学呢。
+    textMandarin: 阿姨…… 阿姨，都九点半了，音响小点行吗？我家孩子明天还上学呢。
     note: 「行不」是东北话把「行不行」缩掉一半的说法，听着比全说更随和。
     audio: /audio/square-dance.dongbei/b1.mp3
-    durationMs: 6192
+    durationMs: 7320
   - beatId: b2
     textDialect: 咋地？这是公共地方，我们跳我们的，碍着你啥事了？
     textMandarin: 怎么？这是公共场所，我们跳我们的，碍着你什么事了？

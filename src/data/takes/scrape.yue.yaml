@@ -9,31 +9,31 @@ lines:
     textMandarin: 你会不会开车？变道不打灯，你那双眼睛是用来出气的吗？
     note: 识唔识＝会不会，揸车＝开车，切线＝变道，对眼＝那双眼睛，系咪＝是不是。
     audio: /audio/scrape.yue/b1.mp3
-    durationMs: 5120
+    durationMs: 5360
   - beatId: b2
-    textDialect: 咩话？我早就喺呢条线度啦，系你自己埋嚟㗎，唔好赖我。
-    textMandarin: 什么话？我早就在这条道上了，是你自己贴过来的，别赖我。
+    textDialect: 咩话？咩话！我早就喺呢条线度啦，系你自己埋嚟㗎，唔好赖我。
+    textMandarin: 什么？什么！我早就在这条线上了，是你自己贴过来的，别赖我。
     note: 咩话＝什么（挑衅式反问），喺…度＝在…（处所），埋嚟＝靠过来，唔好＝别。
     audio: /audio/scrape.yue/b2.mp3
-    durationMs: 5440
+    durationMs: 7200
   - beatId: b3
-    textDialect: 唔好嘈啦，我车上有行车记录仪影住，一调出嚟睇下边个冇理。
-    textMandarin: 别吵了，我车上行车记录仪拍着，一调出来看谁没理。
+    textDialect: 唔好嘈啦。我车上有行车记录仪影住，一调出嚟睇下边个冇理。
+    textMandarin: 别吵了。我车上有行车记录仪拍着，一调出来看谁没理。
     note: 嘈＝吵，影住＝拍着，睇下＝看看，边个＝谁，冇＝没有。
     audio: /audio/scrape.yue/b3.mp3
-    durationMs: 5120
+    durationMs: 8800
   - beatId: b4
     textDialect: 影到又点啊？有种你报警啦，我仲惊你咩？
     textMandarin: 拍到又怎样？有种你报警啊，我还怕你吗？
     note: 又点＝又怎样，仲＝还，惊＝怕，咩＝吗。「我仲惊你咩」是粤语顶嘴的固定句式。
     audio: /audio/scrape.yue/b4.mp3
-    durationMs: 4800
+    durationMs: 4160
   - beatId: b5
     textDialect: 报就报！我今日就唔走喇，睇你个扑街可以捱到几时！
     textMandarin: 报就报！我今天就不走了，看你这扑街能耗到什么时候！
     note: 扑街＝粤语流传最广的骂词，字面是仆倒街头。捱＝熬，几时＝什么时候。
     audio: /audio/scrape.yue/b5.mp3
-    durationMs: 3840
+    durationMs: 4880
   - beatId: b6
     textDialect: ——
     textMandarin: 后面的喇叭响成一片。

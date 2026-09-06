@@ -11,17 +11,17 @@ lines:
     audio: /audio/scrape.dongbei/b1.mp3
     durationMs: 4752
   - beatId: b2
-    textDialect: 咋地？我早就在这道跑着呢，是你自己往上贴的，别赖我。
-    textMandarin: 怎么？我早就在这条道上开着呢，是你自己贴上来的，别赖我。
+    textDialect: 咋地？咋地！我早就在这道跑着呢，是你自己往上贴的，别赖我。
+    textMandarin: 怎么了？怎么了！我早就在这条道跑着呢，是你自己往上贴的，别赖我。
     note: 咋地＝怎么样，是东北话挑衅的起手式，跟「你瞅啥」是一套的。
     audio: /audio/scrape.dongbei/b2.mp3
-    durationMs: 5328
+    durationMs: 5808
   - beatId: b3
-    textDialect: 别扯犊子了，我车上记录仪拍着呢，一调出来看谁没理。
-    textMandarin: 别废话了，我车上行车记录仪拍着呢，一调出来看谁没理。
+    textDialect: 别扯犊子了。我车上记录仪拍着呢，一调出来看谁没理。
+    textMandarin: 别胡扯了。我车上记录仪拍着呢，一调出来看谁没理。
     note: 扯犊子＝废话/胡扯，几乎是东北话的身份证词。
     audio: /audio/scrape.dongbei/b3.mp3
-    durationMs: 5064
+    durationMs: 5304
   - beatId: b4
     textDialect: 拍着又咋地？有能耐你报警去啊，我还怕你咋的？
     textMandarin: 拍着又怎样？有本事你报警去啊，我还怕你不成？
