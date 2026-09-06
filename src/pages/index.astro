@@ -23,6 +23,12 @@ const featuredLines = featured
       .map((p) => ({ name: identityOf(p, dialects, places).name, said: p.lines[0]?.textDialect ?? '' }))
   : [];
 
+// 首页那句宣传语里的地名从数据推出来，不写死。
+// 2026-09-05 的教训：原文写着「在德州、青岛、广州之间横着听过去」，而德州和青岛
+// 早已不是节点、广州从来就不是——写死的例子会在数据变动时静静地变成假话，
+// 而首页第一句话是全站最不该说假话的地方。
+const showcase = [...new Set(takes.map((t) => identityOf(t, dialects, places).name))].slice(0, 3);
+
 const cards = Array.from(scenes.values())
   .filter((scene) => !scene.weekly)
   .map((scene) => {
@@ -45,7 +51,7 @@ const cards = Array.from(scenes.values())
     <h1>各说各话</h1>
     <p class="tagline">
       同一出戏，各地各演一遍。骨架统一，措辞自便——所以你能把「妈妈爆发」这一拍，
-      在德州、青岛、广州之间横着听过去。
+      在{showcase.join('、')}之间横着听过去。
     </p>
   </header>
 

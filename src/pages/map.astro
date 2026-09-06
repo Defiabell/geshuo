@@ -1,7 +1,7 @@
 ---
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import { levelLabel } from '../lib/dialect-tree';
+import { ancestorsOf } from '../lib/dialect-tree';
 import { loadSite } from '../lib/content';
 import { identityOf } from '../lib/identity';
 import type { Identity } from '../lib/identity';
@@ -52,11 +52,22 @@ const withPerf = Array.from(byIdentity.values())
     };
   });
 
-// 有坐标但一份演绎都没有的方言区——地图上留白，正是「还没人录」的地方。
+// 一个方言区里只要已经有真人点了，它就不该再画成「还没有录音」——
+// 武城属于冀鲁官话，把冀鲁标成空的，等于在绿点旁边说「这儿没人录过」，
+// 自相矛盾，而且两个标签会挤在一起打架。
+const covered = new Set<string>();
+for (const { identity } of byIdentity.values()) {
+  const anchor = identity.place ? identity.dialect?.id : identity.id;
+  if (!anchor) continue;
+  covered.add(anchor);
+  for (const a of ancestorsOf(dialects, anchor)) covered.add(a.id);
+}
+
+// 有坐标、且底下一个真人点都没有的方言区——地图上留白，正是「还没人录」的地方。
 // 注意这里只扫方言树：**地点不预先枚举**，没人贡献过的县根本不在 places.yaml
 // 里，所以地图上不会有两千多个灰点假装自己是待办事项。
 const blanks = Array.from(dialects.values())
-  .filter((d) => d.lng !== undefined && d.lat !== undefined && !byIdentity.has(d.id))
+  .filter((d) => d.lng !== undefined && d.lat !== undefined && !byIdentity.has(d.id) && !covered.has(d.id))
   .map((d) => {
     const [cx, cy] = project(d.lng!, d.lat!);
     return { dialect: d, cx, cy };
