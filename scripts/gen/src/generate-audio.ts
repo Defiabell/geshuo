@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -103,6 +104,14 @@ async function synth(text: string, instruction: string, spec: VoiceSpec): Promis
   return synthSpeech(text, instruction, spec);
 }
 
+/** 决定合成输出的全部输入：换任何一样都必须重新合成 */
+function fingerprint(text: string, instruction: string, spec: VoiceSpec): string {
+  return createHash('sha256')
+    .update(`${spec.model}\u0000${spec.voice}\u0000${instruction}\u0000${text}`)
+    .digest('hex')
+    .slice(0, 16);
+}
+
 async function main() {
   const takeId = process.argv.slice(2).find((a) => !a.startsWith('--'));
   if (!takeId) {
@@ -127,6 +136,12 @@ async function main() {
   const outDir = join(ROOT, 'public/audio', takeId);
   mkdirSync(outDir, { recursive: true });
 
+  // 内容指纹表：beatId -> sha256(文本 + 指令 + 音色规格)
+  const hashPath = join(outDir, '.hashes.json');
+  const hashes: Record<string, string> = existsSync(hashPath)
+    ? (JSON.parse(readFileSync(hashPath, 'utf8')) as Record<string, string>)
+    : {};
+
   let billed = 0;
   for (const line of perf.lines) {
     const beat = scene.beats.find((b) => b.id === line.beatId);
@@ -150,16 +165,30 @@ async function main() {
 
     const outPath = join(outDir, `${line.beatId}.mp3`);
 
-    // 幂等：已经有文件、YAML 里也记着这条音频，说明上次跑成功过，直接跳过——
-    // 不重新合成、不重新计费。换音色后要重跑的话，先删掉 public/audio 下对应
-    // 目录（音色变了但文件还在，光看 YAML 是看不出来的）。
-    if (existsSync(outPath) && line.audio) {
-      console.log(`- ${line.beatId} 已有音频，跳过（幂等）`);
+    /**
+     * 幂等按**内容指纹**判，不按文件是否存在判。
+     *
+     * 原先是「有文件就跳过」。2026-09-06 改台词时踩到：五条台词全部重写，
+     * 脚本一条都没重新合成，页面上于是「字是新的、音是旧的」——这是最坏的
+     * 一种不一致，因为它安静、看不出来，而且这个站的全部价值就在于字和音
+     * 对得上。同理换音色、换情绪指令也一样悄悄失效。
+     *
+     * 指纹覆盖真正决定输出的三样：文本、指令、音色规格。指纹存在音频目录里
+     * （随音频一起被 gitignore，也随音频一起搬走），不进内容模型。
+     */
+    const fp = fingerprint(line.textDialect, instruction, spec);
+    if (existsSync(outPath) && line.audio && hashes[line.beatId] === fp) {
+      console.log(`- ${line.beatId} 内容没变，跳过（幂等）`);
       continue;
+    }
+    if (existsSync(outPath) && hashes[line.beatId] !== fp) {
+      console.log(`~ ${line.beatId} 内容变了，重新合成`);
     }
 
     const buf = await synth(line.textDialect, instruction, spec);
     writeFileSync(outPath, buf);
+    hashes[line.beatId] = fp;
+    writeFileSync(hashPath, JSON.stringify(hashes, null, 2), 'utf8');
     line.audio = `/audio/${takeId}/${line.beatId}.mp3`;
     // 量不到就不写这个字段，界面据此不显示秒数——不编数字
     const ms = measureDurationMs(outPath);
