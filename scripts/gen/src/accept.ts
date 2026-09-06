@@ -31,7 +31,11 @@ const MP3 = join(INBOX, 'mp3');
 const DATA_DIR = join(ROOT, 'src/data/');
 const TEXTS = join(INBOX, 'texts.yaml');
 
-interface Meta { place?: string; sceneId?: string; beatId?: string; contact?: string; note?: string }
+/** R2 对象上的投稿元数据。`said` 是投稿人自己写的那句，`ref` 是 AI 的普通话参考 */
+interface Meta {
+  place?: string; sceneId?: string; beatId?: string; contact?: string; note?: string;
+  said?: string; ref?: string; hasAudio?: string;
+}
 interface Obj { key: string; custom_metadata?: Meta }
 
 /** said 写成这些词之一，表示「AI 那句就对，直接用」 */
@@ -54,11 +58,21 @@ function manifest(): Obj[] {
   return JSON.parse(readFileSync(p, 'utf8')) as Obj[];
 }
 
+/**
+ * 拿一条 AI 参考行，只用来给草稿做对照和兜底普通话。
+ *
+ * 原先写死找 `dialectId === 'jilu'`——因为冀鲁离武城最近。2026-09-05 冀鲁的
+ * AI 演绎全部下线之后，这个查找永远返回 null，草稿里不再有 ai 行，接稿会直接
+ * 撞上「没有普通话对照」而全盘失败。写死一个方言 id 的代价就在这里。
+ *
+ * 现在取任意一条 AI 演绎：它只承担「这一拍大意是什么」，不承担「你该怎么说」。
+ * 后者由投稿人自己在网页上写（said 字段），本来也不该由 AI 代劳。
+ */
 function aiLineFor(sceneId: string, beatId: string): { dialect: string; mandarin: string } | null {
   const dir = join(DATA_DIR, 'takes');
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.yaml'))) {
     const p = parse(readFileSync(join(dir, f), 'utf8')) as Take;
-    if (p.sceneId !== sceneId || p.source !== 'tts' || p.dialectId !== 'jilu') continue;
+    if (p.sceneId !== sceneId || p.source !== 'tts') continue;
     const l = p.lines.find((x) => x.beatId === beatId);
     if (l) return { dialect: l.textDialect, mandarin: l.textMandarin };
   }
@@ -72,10 +86,14 @@ function draft() {
 
   const place = objs.find((o) => o.custom_metadata?.place)?.custom_metadata?.place ?? '';
   const grouped: Record<string, string[]> = {};
+  // 投稿人在网页上自己写的那句，按 场景/拍 索引，用来预填草稿。
+  // 网页表单加了输入框之后，多数投稿会自带这句——不该再让审稿人凭空重写一遍。
+  const saidBy: Record<string, string> = {};
   for (const o of objs) {
     const m = o.custom_metadata ?? {};
     if (!m.sceneId || !m.beatId) continue;
     (grouped[m.sceneId] ??= []).push(m.beatId);
+    if (m.said) saidBy[`${m.sceneId}/${m.beatId}`] = m.said;
   }
 
   const lines: string[] = [
@@ -123,7 +141,8 @@ function draft() {
         lines.push(`      ai: ${JSON.stringify(ai.dialect)}`);
         lines.push(`      ai_mandarin: ${JSON.stringify(ai.mandarin)}`);
       }
-      lines.push(`      said: ''`);
+      const filled = saidBy[`${sceneId}/${b.id}`] ?? '';
+      lines.push(`      said: ${JSON.stringify(filled)}${filled ? '   # 投稿人自己写的，核一下' : ''}`);
       lines.push(`      mandarin: ''   # 普通话大意；写「同ai」或留空则沿用上面那行`);
       lines.push(`      note: ''`);
     }

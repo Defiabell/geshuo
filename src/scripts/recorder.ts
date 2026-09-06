@@ -56,6 +56,7 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
     const preview = el.querySelector<HTMLAudioElement>('.prev')!;
     const sendBtn = el.querySelector<HTMLButtonElement>('.send')!;
     const status = el.querySelector<HTMLElement>('.status')!;
+    const saidEl = el.querySelector<HTMLTextAreaElement>('.said');
     const st: BeatState = { blob: null, recorder: null, stream: null };
 
     const say = (msg: string, kind: '' | 'ok' | 'bad' = '') => {
@@ -71,9 +72,18 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
       st.blob = blob;
       preview.src = URL.createObjectURL(blob);
       preview.hidden = false;
-      sendBtn.hidden = false;
+      syncSend();
       say(`${(blob.size / 1024).toFixed(0)} KB，听一下`);
     };
+
+    // 文字和录音是两条独立通道：有任意一条就能提交。
+    // 原先提交按钮只在录到音之后才出现，等于把「只想打字」的人整个挡住——
+    // 而不愿意录自己声音的人可能是多数。
+    const syncSend = () => {
+      const has = st.blob !== null || (saidEl?.value.trim().length ?? 0) > 0;
+      sendBtn.hidden = !has;
+    };
+    saidEl?.addEventListener('input', syncSend);
 
     if (!mime) {
       recBtn.disabled = true;
@@ -134,7 +144,12 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
         placeEl?.focus();
         return;
       }
-      if (!st.blob) return;
+      const said = saidEl?.value.trim() ?? '';
+      if (!st.blob && !said) {
+        say('写一句你们那儿的说法，或者录一段', 'bad');
+        saidEl?.focus();
+        return;
+      }
 
       sendBtn.disabled = true;
 
@@ -153,18 +168,22 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
       say('上传中…');
       const fd = new FormData();
       if (token) fd.set('turnstile', token);
-      fd.set('audio', st.blob, 'clip');
+      if (st.blob) fd.set('audio', st.blob, 'clip');
       fd.set('place', place);
       fd.set('contact', contactEl?.value.trim() ?? '');
       fd.set('sceneId', el.dataset.scene ?? '');
       fd.set('beatId', el.dataset.beat ?? '');
-      fd.set('text', el.querySelector('.ref')?.textContent?.trim() ?? '');
+      // said 是投稿人自己写的那句；ref 是 AI 的普通话参考，只用于审核对照。
+      // 这两个字段以前是一个：`text` 存的是 ref，也就是说投稿人根本没有地方
+      // 写自己那句话，收上来的是我们自己写的东西。
+      fd.set('said', said);
+      fd.set('ref', el.querySelector('.ref')?.textContent?.trim() ?? '');
 
       try {
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new Error(data.error ?? `上传失败（${res.status}）`);
-        say('收到了，谢谢 —— 会有人听过之后替换掉那条 AI 版', 'ok');
+        say(st.blob ? '收到了，谢谢 —— 会有人听过之后上站' : '收到了，谢谢 —— 会有人看过之后上站', 'ok');
         sendBtn.hidden = true;
       } catch (e) {
         say((e as Error).message || '上传失败，过会儿再试', 'bad');

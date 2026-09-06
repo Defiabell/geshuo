@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BEAT, SLUG, extFor, ipBucket, looksLikeAudio } from '../functions/api/_validate';
+import { BEAT, SLUG, extFor, ipBucket, looksLikeAudio , cleanText } from '../functions/api/_validate';
 
 /** 造一段以给定字节开头、后面补零到足够长的数据 */
 const head = (...v: number[]) => new Uint8Array([...v, ...new Array(16).fill(0)]);
@@ -95,5 +95,37 @@ describe('限流用的 IP 归一化', () => {
 
   it('空地址不会崩', () => {
     expect(ipBucket('')).toBe('unknown');
+  });
+});
+
+describe('cleanText：投稿文字的清洗', () => {
+  // 文字比录音危险：录音要有人听过才知道内容，文字是直接渲染到审核台
+  // （将来还会渲染到站上）的，灌广告、夹链接、藏字符的成本低一个数量级。
+  it('去掉控制字符，不让它们进审核台', () => {
+    expect(cleanText('你瞅\u0000啥\u001b[31m', 100)).toBe('你瞅 啥 [31m');
+  });
+
+  it('去掉零宽字符——一段广告能整个藏在看着正常的句子里', () => {
+    expect(cleanText('你\u200b瞅\u200c啥\ufeff', 100)).toBe('你瞅啥');
+  });
+
+  it('换行压平：一拍就是一句话，不需要排版', () => {
+    expect(cleanText('你瞅啥\n\n你瞅啥', 100)).toBe('你瞅啥 你瞅啥');
+  });
+
+  it('按长度截断', () => {
+    expect(cleanText('啊'.repeat(500), 300)).toHaveLength(300);
+  });
+
+  it('非字符串一律得到空串，不抛错——表单里缺字段是常态', () => {
+    expect(cleanText(null, 100)).toBe('');
+    expect(cleanText(undefined, 100)).toBe('');
+    expect(cleanText(42, 100)).toBe('');
+  });
+
+  // 转义**不在这里做**：转义是输出侧的事（审核台用 esc()）。在入口转义会把
+  // & 这类字符永久写坏，还会给人一种「已经安全了」的错觉。
+  it('不做 HTML 转义——那是输出侧的责任，在入口做会写坏原文', () => {
+    expect(cleanText('张三 & 李四', 100)).toBe('张三 & 李四');
   });
 });

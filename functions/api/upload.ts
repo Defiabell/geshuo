@@ -22,7 +22,7 @@
  * 计数从 R2 前缀列举换成了 D1：list 每次都要花一个操作，并发时还会超发。
  */
 
-import { BEAT, SLUG, extFor, ipBucket, looksLikeAudio } from './_validate';
+import { BEAT, SLUG, cleanText, extFor, ipBucket, looksLikeAudio } from './_validate';
 
 interface Env {
   RECORDINGS: R2Bucket;
@@ -34,6 +34,8 @@ interface Env {
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_TEXT = 200;
+/** 投稿人自己写的那句话。一拍就是一句，200 字够用；给到 300 留点余量 */
+const MAX_SAID = 300;
 /** 过了人机验证的，每 IP 每天可以传这么多 */
 const IP_PER_DAY = 30;
 /**
@@ -145,21 +147,37 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     verified = await verifyTurnstile(token, ip, env.TURNSTILE_SECRET);
   }
 
-  const audio = form.get('audio');
-  if (!(audio instanceof File)) return json({ error: '缺少录音文件' }, 400);
-  if (audio.size === 0) return json({ error: '录音是空的' }, 400);
-  if (audio.size > MAX_BYTES) {
-    return json({ error: `录音超过 ${MAX_BYTES / 1024 / 1024}MB，一拍不该这么长` }, 413);
-  }
-  if (!audio.type.startsWith('audio/')) return json({ error: '只收音频文件' }, 415);
+  /**
+   * **文字与录音是两条独立通道，各自都能单独成立。**
+   *
+   * 只填字：很多人不愿意录自己的声音，但愿意打字告诉你「我们那儿说 X」。
+   * 只录音：很多方言词没有定字，写不出来但说得出来。
+   * 两个都有：最好。
+   *
+   * 原先硬性要求音频，等于把第一种人整个挡在门外——而那可能是多数人。
+   */
+  const rawAudio = form.get('audio');
+  const audio = rawAudio instanceof File && rawAudio.size > 0 ? rawAudio : null;
+  const said = cleanText(form.get('said'), MAX_SAID);
 
-  const head = new Uint8Array(await audio.slice(0, 16).arrayBuffer());
-  if (!looksLikeAudio(head)) {
-    return json({ error: '这个文件看着不是音频' }, 415);
+  if (!audio && !said) {
+    return json({ error: '写一句你们那儿的说法，或者录一段——两样至少要有一样' }, 400);
   }
 
-  const place = clean(form.get('place'));
-  if (!place) return json({ error: '得写清楚你是哪儿人——这份录音会挂到那个地方' }, 400);
+  if (audio) {
+    if (audio.size > MAX_BYTES) {
+      return json({ error: `录音超过 ${MAX_BYTES / 1024 / 1024}MB，一拍不该这么长` }, 413);
+    }
+    if (!audio.type.startsWith('audio/')) return json({ error: '只收音频文件' }, 415);
+
+    const head = new Uint8Array(await audio.slice(0, 16).arrayBuffer());
+    if (!looksLikeAudio(head)) {
+      return json({ error: '这个文件看着不是音频' }, 415);
+    }
+  }
+
+  const place = cleanText(form.get('place'), MAX_TEXT);
+  if (!place) return json({ error: '得写清楚你是哪儿人——这份投稿会挂到那个地方' }, 400);
 
   const sceneId = clean(form.get('sceneId'));
   const beatId = clean(form.get('beatId'));
@@ -194,19 +212,28 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const id = crypto.randomUUID();
-  const key = `uploads/${day}/${hash}-${id}.${extFor(audio.type)}`;
+  // 只填字的投稿也走 R2，body 是一小段 JSON。两条通道共用一个存储和一个
+  // 审核台——分成两套的话，审的时候要在两个地方来回对，第一天就会漏。
+  const ext = audio ? extFor(audio.type) : 'json';
+  const key = `uploads/${day}/${hash}-${id}.${ext}`;
+  const body = audio ? audio.stream() : JSON.stringify({ said, place, sceneId, beatId });
+  const contentType = audio ? audio.type : 'application/json';
 
-  await env.RECORDINGS.put(key, audio.stream(), {
-    httpMetadata: { contentType: audio.type },
+  await env.RECORDINGS.put(key, body, {
+    httpMetadata: { contentType },
     customMetadata: {
       place,
       sceneId,
       beatId,
-      dialectId: clean(form.get('dialectId')),
-      text: clean(form.get('text')),
-      contact: clean(form.get('contact')),
-      note: clean(form.get('note')),
-      bytes: String(audio.size),
+      // 投稿人自己写的那句话。以前这个字段存的是 AI 的普通话参考行——
+      // 也就是说投稿人根本没有地方写自己那句，收上来的是我们自己写的东西。
+      said,
+      // AI 那句普通话参考，留着是为了审核时对照「他说的是不是这个意思」
+      ref: cleanText(form.get('ref'), MAX_TEXT),
+      contact: cleanText(form.get('contact'), MAX_TEXT),
+      note: cleanText(form.get('note'), MAX_TEXT),
+      bytes: String(audio?.size ?? 0),
+      hasAudio: audio ? 'yes' : 'no',
       uploadedAt: new Date().toISOString(),
       // 审听时能看出这条是不是过了人机验证——没过的要多留个心眼
       verified: verified ? 'yes' : 'no',

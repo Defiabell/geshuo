@@ -67,3 +67,28 @@ export function ipBucket(ip: string): string {
   }
   return groups.slice(0, 4).map((g) => (g || '0').toLowerCase()).join(':') + '::/64';
 }
+
+/**
+ * 投稿文字的清洗。**比录音危险，所以单独一道。**
+ *
+ * 录音要有人听过才知道内容；文字是直接渲染到审核台、将来还会渲染到站上的，
+ * 批量灌广告、夹链接、塞控制字符的成本比录音低一个数量级。
+ *
+ * 这里只做三件事，都不依赖上下文：
+ * 1. 去掉控制字符与零宽字符——零宽字符能把一段广告藏在看着正常的句子里；
+ * 2. 折叠连续空白，顺带把换行压平（一拍就是一句话，不需要排版）；
+ * 3. 截断。
+ *
+ * 转义**不在这里做**：转义是输出侧的事，谁渲染谁负责（审核台用 esc()）。
+ * 在入口转义会把 & 这类字符永久写坏，而且给人一种"已经安全了"的错觉。
+ */
+export function cleanText(v: unknown, max: number): string {
+  if (typeof v !== 'string') return '';
+  return v
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
+    .replace(/[\u200b-\u200f\u2028\u2029\ufeff]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}

@@ -76,7 +76,7 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
       <section class="join">
         <h2 class="jh">你那儿呢</h2>
         <p class="jp">
-          上面四条都是 AI 合成的，只到区级。<strong>录一句就完事——十五秒，不用注册。</strong>
+          上面几条都是 AI 合成的，只到区级。<strong>写一句或录一句就完事，不用注册。</strong>
         </p>
         <label class="f">
           <span class="k">你是哪儿人 <em>必填</em></span>
@@ -92,11 +92,16 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
 
         <div class="beat" data-scene={cur.scene.id} data-beat={cur.beat.id}>
           <p class="ref">{cur.beat.intent}</p>
+          <label class="say">
+            <span class="k">你们那儿怎么说</span>
+            <textarea class="said" rows="2" maxlength="300"
+              placeholder="写不出来的字用同音字凑就行，以音为准"></textarea>
+          </label>
           <div class="ctl">
             <button class="rec" type="button">● 开始录</button>
             <label class="pick">选个文件<input type="file" accept="audio/*" hidden /></label>
             <audio class="prev" controls hidden></audio>
-            <button class="send" type="button" hidden>上传这一句</button>
+            <button class="send" type="button" hidden>提交这一句</button>
             <span class="status" role="status"></span>
           </div>
         </div>
@@ -141,6 +146,15 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
 </script>
 
 <style>
+  .say { display: block; margin: 10px 0 12px; }
+  .say .k { display: block; font-family: "Noto Sans SC", sans-serif; font-size: 12px;
+            letter-spacing: .08em; color: var(--ink-2); margin-bottom: 5px; }
+  .say textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 17px;
+                  line-height: 1.7; color: var(--ink); background: var(--paper);
+                  border: 1px solid var(--rule); border-radius: 2px; padding: 9px 11px;
+                  resize: vertical; }
+  .say textarea:focus { outline: none; border-color: var(--cut-lit); }
+  .say textarea::placeholder { color: var(--dust); font-size: 14px; }
   .top { padding: 56px 0 8px; }
   .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
   .home:hover { color: var(--cut-lit); }

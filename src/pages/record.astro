@@ -51,11 +51,14 @@ const list = Array.from(scenes.values()).map((scene) => ({
       <li>看这一拍要表达什么意思（下面每条都给了普通话对照）。</li>
       <li><strong>别照着念</strong>——用你们那儿真会说的话说一遍，包括脏字。
         <a href="/swearing/">为什么脏话要留着 →</a></li>
-      <li>点「开始录」，说完点「停」，听一下，觉得行就传。</li>
+      <li><strong>写一句、录一段，有一样就能交。</strong>
+        不想录声音，只把你们那儿的说法打出来，一样算数；
+        写不出字只录音，也一样算数——很多方言词本来就没有通行写法。</li>
     </ol>
     <p class="fine">
-      录音只上传、不公开：会有人先听过，确认是本人本地口音，才会替换掉那条 AI 版，
-      并把这份演绎标成「真人录音」。传上来的东西不会被别人直接访问到。
+      投稿只上传、不公开：会有人先看过听过，确认是本地说法，才会上站。
+      传上来的东西不会被别人直接访问到。同一个地方欢迎好几个人各填各的——
+      说法不一样不是错，那是代际和村落的真实差别，我们会把分歧一起显出来。
     </p>
   </section>
 
@@ -73,6 +76,11 @@ const list = Array.from(scenes.values()).map((scene) => ({
             {role && <span class="role">{role.name}</span>}
           </div>
           {mandarin && <p class="ref">{mandarin}</p>}
+          <label class="say">
+            <span class="k">你们那儿怎么说</span>
+            <textarea class="said" rows="2" maxlength="300"
+              placeholder="写不出来的字用同音字凑就行，以音为准"></textarea>
+          </label>
           <div class="ctl">
             <button class="rec" type="button">● 开始录</button>
             <label class="pick">
@@ -80,7 +88,7 @@ const list = Array.from(scenes.values()).map((scene) => ({
               <input type="file" accept="audio/*" hidden />
             </label>
             <audio class="prev" controls hidden></audio>
-            <button class="send" type="button" hidden>上传这一拍</button>
+            <button class="send" type="button" hidden>提交这一拍</button>
             <span class="status" role="status"></span>
           </div>
         </div>
@@ -100,6 +108,15 @@ const list = Array.from(scenes.values()).map((scene) => ({
 </script>
 
 <style>
+  .say { display: block; margin: 10px 0 12px; }
+  .say .k { display: block; font-family: "Noto Sans SC", sans-serif; font-size: 12px;
+            letter-spacing: .08em; color: var(--ink-2); margin-bottom: 5px; }
+  .say textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 17px;
+                  line-height: 1.7; color: var(--ink); background: var(--paper);
+                  border: 1px solid var(--rule); border-radius: 2px; padding: 9px 11px;
+                  resize: vertical; }
+  .say textarea:focus { outline: none; border-color: var(--cut-lit); }
+  .say textarea::placeholder { color: var(--dust); font-size: 14px; }
   .top { padding: 56px 0 8px; }
   .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
   .home:hover { color: var(--cut-lit); }

@@ -130,10 +130,11 @@ async function pull() {
     <span class="size">${(o.size / 1024).toFixed(0)} KB</span>
   </header>
   <div class="where">${esc(scene?.title ?? (m.sceneId || '未知场景'))} · 第 ${beat?.order ?? '?'} 拍 ${beat ? `· ${esc(beat.intent)}` : ''}</div>
-  ${m.text ? `<p class="said">该说的意思：${esc(m.text)}</p>` : ''}
-  <div class="play">
-    <b>真人</b><audio controls preload="none" src="${esc(local)}"></audio>
-  </div>
+  ${m.said ? `<p class="said"><b>他写的：</b>${esc(m.said)}</p>` : ''}
+  ${m.ref || m.text ? `<p class="ref">该说的意思：${esc(m.ref || m.text)}</p>` : ''}
+  ${m.hasAudio === 'no'
+    ? '<div class="play noaudio">只填了字，没有录音</div>'
+    : `<div class="play"><b>真人</b><audio controls preload="none" src="${esc(local)}"></audio></div>`}
   ${ai.length ? `<div class="ai"><b>对照 AI</b>${ai
     .map((a) => `<span class="one"><i>${esc(a.dialectId)}</i><audio controls preload="none" src="https://geshuo.pages.dev${esc(a.audio)}"></audio></span>`)
     .join('')}</div>` : ''}
