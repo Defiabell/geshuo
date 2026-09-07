@@ -63,28 +63,38 @@
 21. **试过并砍掉：套印错位的报头。** 理由在 `src/lib/proof.ts` 顶部——
     南北渐变的调色板天生邻近偏深，叠印只会糊成一团黑加一道彩色投影。
     别再试第四遍。
+22. **首页最大的字必须是戏名。** 一句话挑战在首屏是**试听**（为了首页出声），
+    不是首页的主题；它不许再长回一个大标题。尤其别把那句话的**普通话版本**
+    放大——全站唯一不该被当成范本的就是它。块里最大的字留给阶梯上的方言。
+23. **四个去处在全站导航里（`Base.astro`），不是首页内容。** 之前它们只长在
+    首页正文，于是除首页外每一页都是死路。做成站级导航而不是「一个页面里的
+    标签页」：这四个是四件不同的事，不是同一份内容的四个视图；标签页的语义
+    会在首页留一个没有选中项的空标签栏。窄屏收成一条可横向滚的行——换行会把
+    「录一段」那块墨挤成整页第一个元素。
+24. **说明所描述的东西不存在时，撤说明。** 例：阶梯缩进在 680px 以下归零，
+    「缩进＝经度」那条图例就必须一起消失，不能留着好看。
 
 ## 四、代码约定
 
-22. **`.astro` 不进 `tsc` 的检查范围。** 组件 Props 的类型错配能安静地活很久
+25. **`.astro` 不进 `tsc` 的检查范围。** 组件 Props 的类型错配能安静地活很久
     （`DialectChips` 声明 `Dialect[]` 却一直收 `Identity[]`，导致真人那枚 chip
     一直显示「待录」）。**改完必须跑 `npm run check`**，不是只跑 `tsc`。
-23. **路径锚 `process.cwd()`，不要 `import.meta.url`。** rolldown 打包后
+26. **路径锚 `process.cwd()`，不要 `import.meta.url`。** rolldown 打包后
     `import.meta.url` 指向产物自身的位置，相对深度算错。
-24. `getStaticPaths()` 是独立作用域：只共享 import，不共享模块里算好的常量。
-25. **运行时插进来的 DOM 套不上 scoped style。** Astro 的 scoped CSS 靠
+27. `getStaticPaths()` 是独立作用域：只共享 import，不共享模块里算好的常量。
+28. **运行时插进来的 DOM 套不上 scoped style。** Astro 的 scoped CSS 靠
     `data-astro-cid-*`，`innerHTML` 新建的元素没有那个属性，必须 `<style is:global>`。
-26. **排期只有一处实现**（`src/lib/weekly.ts`）。首页和 `/weekly/` 各写一遍时，
+29. **排期只有一处实现**（`src/lib/weekly.ts`）。首页和 `/weekly/` 各写一遍时，
     一个带日期闸一个不带，同一个 CTA 前后对不上。构建期判断：写下一期不会
     立刻上线，下次构建（在排期日之后）才换上去。
-27. **`chain.ts` 的两条不变量**：`stop()` 递增 `generation` 作废旧回调；
+30. **`chain.ts` 的两条不变量**：`stop()` 递增 `generation` 作废旧回调；
     **暂停绝不递增**，否则暂停后 `'ended'` 推不动连听。
-28. 色条与列靠 `data-seg` / `data-key` 配对，**不靠 DOM 下标**——列里有没音频的，
+31. 色条与列靠 `data-seg` / `data-key` 配对，**不靠 DOM 下标**——列里有没音频的，
     色条里没有。
 
 ## 五、发布
 
-29. `pnpm deploy` = `astro build && wrangler pages deploy`（Cloudflare Pages 直传）。
+32. `pnpm deploy` = `astro build && wrangler pages deploy`（Cloudflare Pages 直传）。
     **合进 main ≠ 上线**，必须显式部署。
-30. 部署前的门槛：`npx vitest run`、`npm run check`、`npm run build`。
+33. 部署前的门槛：`npx vitest run`、`npm run check`、`npm run build`。
     改了样式还要真的看一眼渲染结果（headless Chrome 截图），别只看构建通过。

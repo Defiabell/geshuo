@@ -153,13 +153,71 @@ body::before {
 }
 @media print { body::before { display: none; } }
 
+/*
+ * ── 样张天头：套准十字 + 全站导航 ──────────────────────────────
+ *
+ * 放在全局而不是 Base 的 scoped style 里：它出现在每一页，样式跟令牌
+ * 同源更好维护，而且 Base 的 <slot/> 里各页都可能想引用这几个类。
+ */
+.sheet {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 0 0; flex-wrap: wrap;
+}
 /* 套准十字：两条 1px 线交叉，不用 SVG 也不用图 */
-.trim { display: flex; justify-content: space-between; padding-top: 18px; }
-.trim span {
-  width: 9px; height: 9px; opacity: .8;
+.mark {
+  width: 9px; height: 9px; flex: none; opacity: .8;
   background:
     linear-gradient(var(--rule), var(--rule)) center / 1px 100% no-repeat,
     linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat;
+}
+/* 小报头：非首页才印 */
+.sheet .sw {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  letter-spacing: .06em; color: var(--cut); text-decoration: none;
+}
+.sheet .sw:hover { color: var(--cut-lit); }
+
+.site-nav {
+  margin-left: auto; display: flex; align-items: center;
+  gap: 20px; flex-wrap: wrap; row-gap: 8px;
+}
+.site-nav a {
+  font-family: var(--font-ui); font-size: 12.5px; letter-spacing: .06em;
+  color: var(--ink-2); text-decoration: none;
+  padding-bottom: 3px; border-bottom: 2px solid transparent;
+  transition: color .18s, border-color .18s;
+}
+.site-nav a:hover { color: var(--cut); border-bottom-color: var(--rule); }
+.site-nav a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+/* 当前页：一道墨线。视觉上就是一排 tab，但每一项是一个真页面 */
+.site-nav a[aria-current="page"] { color: var(--cut); border-bottom-color: var(--cut); }
+/* 「录一段」是这个站唯一的请求，不跟四个去处混在一排里 */
+.site-nav .ask {
+  background: var(--cut); color: var(--paper); padding: 6px 13px;
+  border-bottom: none; letter-spacing: .1em;
+}
+.site-nav .ask:hover { background: var(--cut-lit); color: var(--paper); border-bottom-color: transparent; }
+.site-nav .ask[aria-current="page"] { background: var(--live); color: var(--paper); }
+
+@media (max-width: 560px) {
+  /*
+   * 窄屏：十字让位，导航收成一条可横向滚的行。
+   *
+   * 不用换行——换行会把「录一段」那块墨色挤到第二行独占一条，于是**整页
+   * 第一个元素变成一个黑按钮**，在你还不知道这站是什么之前就先叫你投稿。
+   * 一行滚动保住了「一排 tab」的读法，也保住了那块墨的分量（手机才是录音
+   * 真正发生的地方）。
+   */
+  .sheet { gap: 12px; }
+  .sheet .mark { display: none; }
+  .site-nav {
+    margin-left: 0; gap: 16px; flex-wrap: nowrap;
+    overflow-x: auto; scrollbar-width: none;
+    /* 滚动条藏起来，但两端留出内边距，免得首尾项贴着屏幕边 */
+    padding: 2px 2px 4px; margin-inline: -2px;
+  }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .site-nav a { flex: none; }
 }
 
 /*

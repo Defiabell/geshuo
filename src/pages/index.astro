@@ -121,11 +121,19 @@ const cards = Array.from(scenes.values())
 
   {featured && (
     <section class="proof">
-      <div class="slug">
+      {/*
+        这一块是**试听**，不是首页的主题。
+
+        2026-09-07 owner 指出「一句话挑战还在页面最大的位置，不合适」——对的，
+        而且比他说的更糟：那个 42px 的大标题印的是这句话的**普通话版本**，
+        全站唯一不该被当成范本的那一版。所以标题收进这行小字，块里最大的字
+        让给阶梯上那四句方言——那才是内容。首屏出声的位置保住，字号让出去。
+      */}
+      <h2 class="slug wk-slug">
         <span>一句话挑战 · {featured.weekly}</span>
+        <b>{featured.title}</b>
         <span class="legend">色序＝纬度　缩进＝经度</span>
-      </div>
-      <h2 class="wk-title">{featured.title}</h2>
+      </h2>
       <p class="wk-sit">{featured.situation}</p>
 
       {/*
@@ -184,13 +192,6 @@ const cards = Array.from(scenes.values())
     </section>
   )}
 
-  <nav class="ways">
-    <a href="/guess/"><b>盲听猜方言</b><span>不给标签，猜是哪儿的</span></a>
-    <a href="/map/"><b>方言地图</b><span>看看你那儿点亮了没有</span></a>
-    <a href="/record/"><b>录一段</b><span>网页上直接录，不用注册</span></a>
-    <a href="/swearing/"><b>脏话也是方言</b><span>立场说明 · 有投票</span></a>
-  </nav>
-
   <section class="plays">
     <h2 class="slug"><span>挑一出戏</span><span class="legend">一个墨点＝一个地方</span></h2>
     {cards.map(({ scene, ids, beats, first }) => (
@@ -231,14 +232,21 @@ const cards = Array.from(scenes.values())
   /* ── 印工的批注：所有 mono 小字 ────────────────────────── */
   .slug {
     display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em;
-    color: var(--dust); text-transform: uppercase;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em;
+    color: var(--dust);
   }
   /* 批注要弱，但不能弱到看不见——第一版用 --rule，在纸白上直接消失了 */
   .slug .legend, .slug .ink-count { color: var(--dust); opacity: .72; letter-spacing: .1em; }
+  /* 图例推到行尾：左边是「这是什么」，右边是「怎么读这张图」，挨着写谁都读不清 */
+  .slug .legend { margin-left: auto; }
+  /*
+   * 窄屏上「缩进＝经度」是**假话**——阶梯缩进在 680px 以下已经归零（见 .line）。
+   * 一条说明它所描述的东西不存在时，正确做法是撤掉说明，不是留着好看。
+   */
+  @media (max-width: 680px) { .slug .legend { display: none; } }
 
   /* ── 报头 ─────────────────────────────────────────────── */
-  .top { padding: 60px 0 26px; display: flex; flex-direction: column; gap: 16px; }
+  .top { padding: 34px 0 26px; display: flex; flex-direction: column; gap: 16px; }
   .mast {
     margin: 0 0 6px; font-family: var(--font-display);
     font-weight: 900; font-size: clamp(46px, 8.4vw, 82px); line-height: 1;
@@ -250,12 +258,13 @@ const cards = Array.from(scenes.values())
 
   /* ── 本周一句话 ───────────────────────────────────────── */
   .proof { margin: 26px 0 0; display: flex; flex-direction: column; gap: 0; }
-  .wk-title {
-    font-family: var(--font-display); font-weight: 700;
-    font-size: clamp(30px, 4.6vw, 42px); color: var(--cut);
-    margin: 14px 0 6px; letter-spacing: .02em;
+  /* 试听块的标题：收在小字里，块里最大的字留给阶梯上的方言 */
+  .wk-slug { margin: 0; font-weight: 400; }
+  .wk-slug b {
+    font-family: var(--font-display); font-weight: 700; font-size: 16px;
+    color: var(--cut); letter-spacing: .02em;
   }
-  .wk-sit { font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-2); margin: 0 0 20px; max-width: 34em; }
+  .wk-sit { font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 34em; }
 
   /* 连听键长在色条头上：一件乐器 */
   .rig { display: flex; align-items: stretch; gap: 2px; margin-bottom: 26px; flex-wrap: wrap; }
@@ -287,6 +296,8 @@ const cards = Array.from(scenes.values())
     font-weight: 500; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-c); white-space: nowrap;
   }
   .seg em { opacity: .72; font-variant-numeric: tabular-nums; }
+  /* 窄屏上段内放不下两个标签就先舍秒数——宽度已经把长短说清楚了 */
+  @media (max-width: 560px) { .seg em { display: none; } }
   /* 进度：--p 由 chain.ts 按 timeupdate 写入 */
   .seg::after {
     content: ""; position: absolute; left: 0; top: 0; bottom: 0;
@@ -327,19 +338,8 @@ const cards = Array.from(scenes.values())
   .wk-cta a { color: var(--cut-lit); text-decoration: none; }
   .wk-cta a:hover { text-decoration: underline; }
 
-  /* ── 四个入口：去掉方框，改成四条墨条 ──────────────────── */
-  .ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 22px; margin: 46px 0 0; }
-  .ways a {
-    display: flex; flex-direction: column; gap: 3px; text-decoration: none;
-    border-top: 2px solid var(--rule); padding: 11px 0 0; transition: border-color .2s;
-  }
-  .ways a:hover { border-top-color: var(--cut); }
-  .ways a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
-  .ways b { font-family: var(--font-display); font-size: 17px; color: var(--cut); font-weight: 700; }
-  .ways span { font-family: var(--font-ui); font-size: 12px; color: var(--dust); }
-
   /* ── 挑一出戏：条目，不是卡片 ──────────────────────────── */
-  .plays { margin-top: 64px; }
+  .plays { margin-top: 56px; }
   .play {
     display: block; text-decoration: none; padding: 20px 0 18px;
     border-top: 1px solid var(--rule); transition: background .2s;

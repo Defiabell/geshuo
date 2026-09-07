@@ -251,6 +251,8 @@ const enriched = columns.map((c, i) => {
     font-weight: 500; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-c); white-space: nowrap;
   }
   .seg em { opacity: .72; font-variant-numeric: tabular-nums; }
+  /* 窄屏上段内放不下两个标签就先舍秒数——宽度已经把长短说清楚了 */
+  @media (max-width: 560px) { .seg em { display: none; } }
   /* 进度：--p 由 chain.ts 按 timeupdate 写入 */
   .seg::after {
     content: ""; position: absolute; left: 0; top: 0; bottom: 0;

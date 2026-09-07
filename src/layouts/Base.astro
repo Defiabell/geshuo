@@ -2,6 +2,34 @@
 import '../styles/tokens.css';
 interface Props { title: string; description?: string; noindex?: boolean }
 const { title, description = '同一出戏，各地各演一遍。', noindex = false } = Astro.props;
+
+/**
+ * 全站导航。
+ *
+ * 2026-09-07 之前这四个入口只长在首页正文里，于是**除了首页，全站每一页都是
+ * 死路**——进了 /map/ 只能退回首页，横向去不了任何地方。owner 问「是不是该
+ * 做成 tab」，问的其实是这件事。
+ *
+ * 做成站级导航而不是「一个页面里的标签页」：这四个是四件不同的事（一个游戏、
+ * 一张图、一个表单、一篇立场），不是同一份内容的四个视图。标签页的语义是
+ * 「切换看同一个东西」，用在这儿会得到一个在首页没有选中项的空标签栏。
+ * 视觉上它就是一排 tab（当前页带墨线），但每一项是一个真页面、有自己的 URL。
+ *
+ * 「录一段」单独标出来：那是这个站唯一的请求，不该跟四个去处混在一排里。
+ */
+const NAV = [
+  { href: '/weekly/', label: '一句话挑战' },
+  { href: '/guess/', label: '盲听猜方言' },
+  { href: '/map/', label: '方言地图' },
+  { href: '/swearing/', label: '脏话也是方言' },
+] as const;
+
+const path = Astro.url.pathname;
+// 首页不重复印小报头——它正下方就是那个 82px 的大报头
+const isHome = path === '/';
+// startsWith 让 /record/debt/ 也算在 /record/ 上。'/' 故意不进 NAV，
+// 否则它会 startsWith 匹配全站每一页。
+const isCurrent = (href: string) => path === href || path.startsWith(href);
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -22,11 +50,24 @@ const { title, description = '同一出戏，各地各演一遍。', noindex = f
   <body>
     <div class="wrap">
       {/*
-        样张的套准十字。印刷厂的校色样张四角都有这个记号，用来看几色对没
-        对齐——这个站的全部主张就是「对不齐」，所以它是这里最名正言顺的
-        装饰：它有本职工作。两个纯 CSS 十字，没有额外请求。
+        样张的天头：两枚套准十字夹着导航。
+
+        印刷厂的校色样张四角都有套准十字，用来看几色对没对齐——这个站的全部
+        主张就是「对不齐」，所以它是这里最名正言顺的装饰：它有本职工作。
+        导航排在两枚十字之间，于是它读起来是这张样张的边缘信息，不是内容。
+        两个纯 CSS 十字，没有额外请求。
       */}
-      <div class="trim" aria-hidden="true"><span></span><span></span></div>
+      <header class="sheet">
+        <span class="mark" aria-hidden="true"></span>
+        {!isHome && <a class="sw" href="/">各说各话</a>}
+        <nav class="site-nav" aria-label="站内导航">
+          {NAV.map((n) => (
+            <a href={n.href} aria-current={isCurrent(n.href) ? 'page' : undefined}>{n.label}</a>
+          ))}
+          <a class="ask" href="/record/" aria-current={isCurrent('/record/') ? 'page' : undefined}>录一段</a>
+        </nav>
+        <span class="mark" aria-hidden="true"></span>
+      </header>
       <slot />
     </div>
   </body>

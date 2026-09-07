@@ -42,7 +42,6 @@ const lineOf = (beatId: string) => take.lines.find((l) => l.beatId === beatId)!;
 ---
 <Base title={`${scene.title} · ${dialect.name} — 各说各话`} description={scene.situation}>
   <header class="top">
-    <a class="home" href="/">← 各说各话</a>
     <h1>{scene.title}</h1>
     <p class="situation">{scene.situation}</p>
   </header>
@@ -83,11 +82,9 @@ const lineOf = (beatId: string) => take.lines.find((l) => l.beatId === beatId)!;
 
 <style>
   .top { padding: 56px 0 22px; }
-  .home {
     font-family: "Noto Sans SC", sans-serif; font-size: 13px;
     color: var(--dust); text-decoration: none; letter-spacing: .1em;
   }
-  .home:hover { color: var(--cut-lit); }
   h1 {
     font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px);
     color: var(--cut); margin: 14px 0 8px; letter-spacing: .04em; line-height: 1.1;
