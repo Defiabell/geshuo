@@ -7,25 +7,28 @@ import { loadSite, takesForBeat } from '../lib/content';
 import { identityOf } from '../lib/identity';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../lib/verification';
 import { chainSeconds } from '../lib/audio';
+import { colorFor } from '../lib/palette';
+import { panFor } from '../lib/geo';
+import { segments } from '../lib/proof';
+import { weeklySchedule } from '../lib/weekly';
 
 const DATA_DIR = join(process.cwd(), 'src', 'data');
 const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
-// 按日期倒序，最新一期做主角，其余进往期。日期在构建时定死——这个站是
-// 静态站 + 手动部署，不假装有「实时当周」这回事。
-const weeklies = Array.from(scenes.values())
-  .filter((s) => s.weekly)
-  .sort((a, b) => (a.weekly! < b.weekly! ? 1 : -1));
+// 排期判断在 src/lib/weekly.ts，跟首页共用一处——两处各写一遍时首页放
+// 上一期、这里放下一期，同一个 CTA 前后对不上（2026-09-07）。
+const { current, past } = weeklySchedule(scenes.values());
 
-const current = weeklies[0];
-const past = weeklies.slice(1);
-
+// 按纬度从北到南排。配色也是按纬度给的（src/lib/palette.ts），两者一致时
+// 整排列头读起来就是一条从冷到暖的色带，而不是几块随机颜色。
 const columnsFor = (sceneId: string, beatId: string) =>
-  takesForBeat(takes, sceneId, beatId).map(({ take, line }) => ({
-    dialect: identityOf(take, dialects, places),
-    take,
-    line,
-  }));
+  takesForBeat(takes, sceneId, beatId)
+    .map(({ take, line }) => ({
+      dialect: identityOf(take, dialects, places),
+      take,
+      line,
+    }))
+    .sort((a, b) => (b.dialect.lat ?? -90) - (a.dialect.lat ?? -90));
 
 const cur = current
   ? { scene: current, beat: current.beats.find((b) => b.speakerRole !== 'none')!, }
@@ -33,6 +36,10 @@ const cur = current
 const curCols = cur ? columnsFor(cur.scene.id, cur.beat.id) : [];
 const playable = curCols.filter((c) => c.line.audio).length;
 const totalSeconds = chainSeconds(curCols.map((c) => c.line));
+// 色条：按真实时长切分，兼任播放进度与选段（见 src/lib/proof.ts）
+const bar = segments(
+  curCols.map((c) => ({ identity: c.dialect, audio: c.line.audio, durationMs: c.line.durationMs })),
+);
 ---
 <Base
   title={cur ? `${cur.scene.title} — 一句话挑战 · 各说各话` : '一句话挑战 — 各说各话'}
@@ -50,20 +57,45 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
       <p class="ask">{cur.beat.intent}——<strong>你们那儿怎么说？</strong></p>
 
       {playable > 1 && (
-        <div class="bar">
-          <button class="btn-chain" id="chain" data-idle={`▶ ${playable} 地连听`}>▶ {playable} 地连听</button>
-          {totalSeconds !== null && <span class="bar-hint">{totalSeconds} 秒听完全国</span>}
-        </div>
+        <>
+          <div class="rig">
+            <button class="btn-chain" id="chain" data-idle={`▶ ${playable} 地连听`}>▶ {playable} 地连听</button>
+            {bar.length > 0 ? (
+              <div class="colorbar">
+                {bar.map((sg) => (
+                  <button
+                    class="seg"
+                    type="button"
+                    data-seg={sg.key}
+                    style={`flex:${sg.ms};--c:${sg.color}`}
+                    aria-label={`播放${sg.name}，${sg.label} 秒`}
+                  ><b>{sg.name}</b><em>{sg.label}s</em></button>
+                ))}
+              </div>
+            ) : (
+              totalSeconds !== null && <span class="bar-hint">{totalSeconds} 秒听完全国</span>
+            )}
+          </div>
+          {bar.length > 0 && totalSeconds !== null && (
+            <p class="bar-foot">点色条上任意一段可以只听那一段　·　{totalSeconds} 秒听完全国</p>
+          )}
+        </>
       )}
 
       <div class="compare" id="compare">
         {curCols.map(({ dialect, take, line }) => (
-          <div class="col" data-audio={line.audio ?? ''}>
+          <div
+            class={`col ${take.source === 'human' ? 'real' : 'ai'}`}
+            data-audio={line.audio ?? ''}
+            data-key={dialect.id}
+            data-pan={panFor(dialect.lat)}
+            style={`--c:${colorFor(dialect)}`}
+          >
             <h2>
               {dialect.name} <span class="lv2">· {levelLabel(dialect.level)}</span>
-              {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
+              {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}></button>}
             </h2>
-            <p class="said">{line.textDialect}</p>
+            <p class={`said ${take.source === 'human' ? 'grain-real' : 'grain-ai'}`}>{line.textDialect}</p>
             <p class="trans">{line.textMandarin}</p>
             {line.note && <p class="gloss">{line.note}</p>}
             <span class={`tag ${VERIFICATION_TAG_CLASS[take.verification]}`}>
@@ -168,11 +200,11 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
              border-left: 3px solid var(--cut-lit); max-width: 40em; }
   .pass-on p { margin: 0 0 12px; font-size: 14.5px; color: var(--ink-2); line-height: 1.8; }
   .pass-on b { color: var(--cut); }
-  .pass-on button { font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; cursor: pointer;
+  .pass-on button { font-family: var(--font-ui); font-size: 13.5px; cursor: pointer;
                     border: 1px solid var(--cut); background: transparent; color: var(--cut);
                     padding: 8px 16px; border-radius: 2px; }
   .pass-on button:hover { background: var(--cut); color: var(--paper); }
-  .pass-on .tip { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px;
+  .pass-on .tip { font-family: var(--font-ui); font-size: 12.5px;
                   color: var(--dust); margin-left: 10px; word-break: break-all; }
 </style>
 
@@ -181,7 +213,7 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
     background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
   .f select:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
   .say { display: block; margin: 10px 0 12px; }
-  .say .k { display: block; font-family: "Noto Sans SC", sans-serif; font-size: 12px;
+  .say .k { display: block; font-family: var(--font-ui); font-size: 12px;
             letter-spacing: .08em; color: var(--ink-2); margin-bottom: 5px; }
   .say textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 17px;
                   line-height: 1.7; color: var(--ink); background: var(--paper);
@@ -190,57 +222,95 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   .say textarea:focus { outline: none; border-color: var(--cut-lit); }
   .say textarea::placeholder { color: var(--dust); font-size: 14px; }
   .top { padding: 56px 0 8px; }
-  .home { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
+  .home { font-family: var(--font-ui); font-size: 13px; color: var(--dust); text-decoration: none; letter-spacing: .1em; }
   .home:hover { color: var(--cut-lit); }
-  .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); margin-top: 14px; }
+  .eyebrow { font-family: var(--font-ui); font-size: 12px; letter-spacing: .22em; color: var(--dust); margin-top: 14px; }
   h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 8vw, 70px); color: var(--cut); margin: 8px 0 10px; letter-spacing: .04em; }
   .sit { margin: 0 0 6px; color: var(--ink-2); max-width: 34em; }
   .ask { margin: 18px 0 20px; font-size: 16px; color: var(--ink-2); }
   .ask strong { color: var(--cut-lit); }
 
-  .bar { display: flex; gap: 14px; align-items: center; margin: 0 0 16px; flex-wrap: wrap; }
+  /* 连听键 + 色条 = 一件乐器（同首页与对比页） */
+  .rig { display: flex; align-items: stretch; gap: 2px; margin: 0 0 10px; flex-wrap: wrap; }
   .btn-chain {
-    font-family: "Noto Sans SC", sans-serif; font-size: 14px; cursor: pointer;
-    background: var(--cut); color: #FFF6E8; border: none; padding: 12px 24px; border-radius: 2px;
+    font-family: var(--font-ui); font-size: 14px; cursor: pointer; white-space: nowrap;
+    background: var(--cut); color: #FFF6E8; border: none; padding: 0 24px; height: 42px;
     transition: background .2s;
   }
   .btn-chain:hover { background: var(--cut-lit); }
   .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
-  .bar-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
-
-  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 2px; }
-  .col { background: var(--night-2); border: 1px solid var(--rule); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; }
-  .col.on { border-color: var(--cut); background: var(--paper); }
-  .col.on h2 { color: var(--cut-lit); }
-  .col h2 { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 0; letter-spacing: .1em; color: var(--ink-2); font-weight: 500; }
-  .lv2 { font-size: 11px; color: var(--dust); letter-spacing: .1em; }
-  .one {
-    font-size: 11px; line-height: 1; cursor: pointer; margin-left: 8px;
-    background: transparent; border: 1px solid var(--rule); color: var(--cut);
-    width: 22px; height: 22px; border-radius: 50%; padding: 0;
+  .colorbar { display: flex; gap: 2px; flex: 1 1 380px; min-width: 240px; }
+  /* 淡色调一律在 oklab 里混：sRGB 等比例混色出来轻重不一，赭色那段会发白 */
+  .seg {
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    position: relative; overflow: hidden; cursor: pointer; min-width: 0;
+    height: 42px; border: none; border-top: 3px solid var(--ink-c); padding: 0 0 0 9px;
+    background: color-mix(in oklab, var(--c) 30%, var(--night));
+    display: flex; align-items: center; gap: 7px; text-align: left; transition: background .18s;
   }
-  .one:hover { background: var(--cut); border-color: var(--cut); color: #FFF6E8; }
-  .said { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 2.8vw, 26px); color: var(--cut); margin: 2px 0; line-height: 1.5; }
-  .trans { font-size: 14px; color: var(--ink-2); margin: 0; }
+  .seg:hover { background: color-mix(in oklab, var(--c) 42%, var(--night)); }
+  .seg:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: -2px; }
+  .seg b, .seg em {
+    position: relative; z-index: 1; font-family: var(--font-mono); font-style: normal;
+    font-weight: 500; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-c); white-space: nowrap;
+  }
+  .seg em { opacity: .72; font-variant-numeric: tabular-nums; }
+  .seg::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: calc(var(--p, 0) * 1%); background: color-mix(in oklab, var(--c) 42%, transparent);
+  }
+  .seg.on { background: color-mix(in oklab, var(--c) 48%, var(--night)); }
+  .seg.on b { color: var(--ink); }
+  .bar-hint { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); align-self: center; }
+  .bar-foot { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); margin: 0 0 22px; }
+
+  /* 列不是卡片：一条墨色顶线就够，方框会把三列压成三张卡 */
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 26px; }
+  .col {
+    --c: var(--ink-2);
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    display: flex; flex-direction: column; gap: 9px;
+    border-top: 2px dashed var(--ink-c); padding-top: 11px;
+  }
+  /* 虚实语法：AI 那列的顶线是虚的，真人那列是实的。不用读标签就知道哪个是真的 */
+  .col.real { border-top-style: solid; border-top-width: 3px; }
+  .col.on { box-shadow: inset 2px 0 0 var(--live); background: var(--paper); }
+  .col h2 {
+    font-family: var(--font-ui); font-size: 12.5px; margin: 0; letter-spacing: .1em;
+    color: var(--ink-c); font-weight: 500; display: flex; align-items: center; gap: 8px;
+  }
+  .lv2 { font-size: 11px; color: var(--dust); letter-spacing: .1em; flex: 1; }
+  /* 播放键是一块油墨，不是圆圈（全站统一，见 src/lib/proof.ts） */
+  .one {
+    cursor: pointer; padding: 0; background: var(--ink-c); border: none; border-radius: 0;
+    width: 13px; height: 13px; flex: none; transition: transform .16s;
+  }
+  .one:hover { transform: scale(1.25); }
+  .said { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 2.8vw, 26px); color: var(--ink-c); margin: 2px 0; line-height: 1.5; }
+  /*
+   * 普通话对照用官方体，方言原话用宋体。这不是排版口味，是这个站的立场：
+   * 标准语是表格和路牌上的字，方言是人说话的字。
+   */
+  .trans { font-family: var(--font-ui); font-size: 13px; color: var(--ink-2); margin: 0; line-height: 1.8; }
   .gloss { font-size: 12.5px; color: var(--dust); margin: 0; border-left: 2px solid var(--rule); padding-left: 10px; }
-  .tag { font-family: "Noto Sans SC", sans-serif; font-size: 11px; padding: 2px 8px; align-self: flex-start; border: 1px solid currentColor; }
+  .tag { font-family: var(--font-ui); font-size: 11px; padding: 2px 8px; align-self: flex-start; border: 1px solid currentColor; }
 
   .join { margin-top: 46px; border-top: 1px solid var(--rule); padding-top: 26px; max-width: 36em; }
   .jh { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--cut); margin: 0 0 10px; }
   .jp { color: var(--ink-2); margin: 0 0 18px; }
   .jp strong { color: var(--cut-lit); }
   .f { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .k { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); letter-spacing: .06em; }
+  .k { font-family: var(--font-ui); font-size: 13px; color: var(--dust); letter-spacing: .06em; }
   .k em { font-style: normal; color: var(--cut); font-size: 11.5px; margin-left: 6px; }
   .f input { font: inherit; font-size: 15px; padding: 11px 14px; background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
   .f input:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
-  .hint { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
+  .hint { font-family: var(--font-ui); font-size: 12px; color: var(--dust); }
   .ts { margin: 14px 0 4px; }
   .beat { border-top: 1px solid var(--rule); padding-top: 16px; }
   .ref { margin: 0 0 12px; color: var(--ink-2); font-size: 15px; }
   .ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .ctl button, .pick {
-    font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; cursor: pointer;
+    font-family: var(--font-ui); font-size: 13.5px; cursor: pointer;
     border: 1px solid var(--cut); background: transparent; color: var(--cut);
     padding: 8px 16px; border-radius: 2px; transition: background .18s, color .18s;
   }
@@ -249,7 +319,7 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   .ctl button.on { background: var(--cut); color: var(--paper); }
   .send { border-style: dashed; }
   .prev { height: 34px; max-width: 240px; }
-  .status { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  .status { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); }
   .status.ok { color: var(--cut); }
   .status.bad { color: var(--cut-lit); }
   .fine { font-size: 13px; color: var(--dust); border-left: 3px solid var(--rule); padding-left: 14px; margin: 16px 0 0; }
@@ -260,6 +330,6 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   .card { background: var(--night-2); border: 1px solid var(--rule); padding: 20px 18px; text-decoration: none; display: flex; flex-direction: column; gap: 7px; transition: border-color .2s; }
   .card:hover { border-color: var(--cut); }
   .card h3 { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--cut); margin: 0; }
-  .cm { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); margin: 0; }
+  .cm { font-family: var(--font-ui); font-size: 12px; color: var(--dust); margin: 0; }
   .cl { font-size: 14px; color: var(--ink-2); margin: 0; }
 </style>

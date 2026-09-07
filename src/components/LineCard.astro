@@ -32,6 +32,8 @@ const order = String(beat.order).padStart(2, '0');
 <style>
   .line {
     --c: var(--ink-2);
+    /* 前景油墨走 --ink-c：深色主题下提亮，见 src/styles/tokens.css */
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
     display: grid; grid-template-columns: 92px 1fr; gap: 22px;
     padding: 24px 0; border-bottom: 1px solid var(--rule);
     transition: background .35s ease;
@@ -43,12 +45,13 @@ const order = String(beat.order).padStart(2, '0');
   }
   .line.active .beat { color: var(--live); }
   .play {
-    width: 34px; height: 34px; border-radius: 50%; margin-top: 8px;
-    border: 1px solid var(--rule); background: none; color: var(--c);
+    /* 方的：这个站的播放键是一块油墨，全站没有圆（地图上的点除外，那是地图记号） */
+    width: 34px; height: 34px; border-radius: 0; margin-top: 8px;
+    border: 1px solid var(--rule); background: none; color: var(--ink-c);
     cursor: pointer; display: grid; place-items: center;
     transition: background .2s, color .2s, border-color .2s;
   }
-  .play:hover:not(:disabled) { background: var(--c); border-color: var(--c); color: var(--night); }
+  .play:hover:not(:disabled) { background: var(--ink-c); border-color: var(--ink-c); color: var(--night); }
   .play:disabled { opacity: .28; cursor: not-allowed; }
   .play:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
   .line.active .play { background: var(--live); border-color: var(--live); color: var(--night); }
@@ -57,10 +60,10 @@ const order = String(beat.order).padStart(2, '0');
   /* 虚实语法：AI 的字发虚偏灰，真人的字锐利色实 */
   .said {
     font-family: var(--font-display); font-size: clamp(20px, 3vw, 27px); font-weight: 500;
-    line-height: 1.58; color: var(--c); margin: 0 0 10px; text-wrap: balance; letter-spacing: .01em;
+    line-height: 1.58; color: var(--ink-c); margin: 0 0 10px; text-wrap: balance; letter-spacing: .01em;
   }
-  .line.ai .said { color: color-mix(in srgb, var(--c) 60%, var(--dust)); }
-  .line.active .said { color: var(--c); opacity: 1; text-shadow: none; }
+  .line.ai .said { color: color-mix(in oklab, var(--ink-c) 60%, var(--dust)); }
+  .line.active .said { color: var(--ink-c); opacity: 1; text-shadow: none; }
 
   .trans { margin: 0 0 10px; font-size: 14.5px; color: var(--ink-2); }
   /* 注释升格：悬挂缩进，不再压成灰色小字 */
@@ -70,7 +73,7 @@ const order = String(beat.order).padStart(2, '0');
   }
   .row-foot { display: flex; align-items: center; gap: 16px; margin-top: 15px; flex-wrap: wrap; }
   .tag { font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .09em; color: var(--dust); }
-  .tag.human { color: var(--c); font-weight: 500; }
+  .tag.human { color: var(--ink-c); font-weight: 500; }
   .wrong {
     font-family: var(--font-ui); font-size: 12.5px; background: none; border: none;
     cursor: pointer; color: var(--dust); border-bottom: 1px dashed var(--rule); padding: 0 0 2px;

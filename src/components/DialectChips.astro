@@ -1,10 +1,21 @@
 ---
-import { levelLabel } from '../lib/dialect-tree';
 import { colorFor } from '../lib/palette';
-import type { Dialect, Take } from '../lib/types';
-interface Props { dialects: Dialect[]; takes: Take[]; sceneId: string; currentId: string }
+import type { Identity } from '../lib/identity';
+import { takeIdentity, type Take } from '../lib/types';
+
+/**
+ * 收的是 Identity 而不是 Dialect：一列可能是 AI 挂在方言区上，也可能是真人挂在
+ * 六位行政区划上（见 src/lib/identity.ts）。
+ *
+ * 这里原先声明成 `Dialect[]`，而调用方一直传 `Identity[]`——**.astro 不进
+ * tsc 的检查范围，所以这个错配安静地活了下来**（要 astro check 才看得见）。
+ * 它不只是类型不齐：下面那句 sourceOf 拿 `dialectId` 去比，而真人演绎只有
+ * `placeCode`，于是**真人那一枚 chip 一直显示「待录」**，把站上唯一的真人
+ * 录音标成了没录。用 takeIdentity() 按同一套身份比，才对得上。
+ */
+interface Props { dialects: Identity[]; takes: Take[]; sceneId: string; currentId: string }
 const { dialects, takes, sceneId, currentId } = Astro.props;
-const sourceOf = (id: string) => takes.find((p) => p.dialectId === id)?.source;
+const sourceOf = (id: string) => takes.find((p) => takeIdentity(p) === id)?.source;
 ---
 <div class="dialects" role="group" aria-label="选择方言">
   {dialects.map((d) => {
@@ -17,7 +28,7 @@ const sourceOf = (id: string) => takes.find((p) => p.dialectId === id)?.source;
         style={`--c:${colorFor(d)}`}
         aria-current={d.id === currentId ? 'page' : undefined}
       >
-        {d.name}<span class="lv">{levelLabel(d.level)} · {tail}</span>
+        {d.name}<span class="lv">{d.levelLabel} · {tail}</span>
       </a>
     );
   })}
@@ -26,18 +37,20 @@ const sourceOf = (id: string) => takes.find((p) => p.dialectId === id)?.source;
 <style>
   .dialects { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
   .chip {
+    /* 前景油墨走 --ink-c，深色主题会提亮（见 tokens.css） */
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
     --c: var(--ink-2);
     font-family: var(--font-ui); font-size: 13.5px; text-decoration: none;
-    background: none; border: none; border-top: 2px solid var(--c); color: var(--ink-2);
+    background: none; border: none; border-top: 2px solid var(--ink-c); color: var(--ink-2);
     padding: 8px 14px 8px 0; display: flex; align-items: baseline; gap: 8px;
     transition: color .2s, border-color .2s;
   }
   /* 虚实语法也进切换条：AI 的挂虚线，真人的挂实线 */
   .chip.ai { border-top-style: dashed; }
   .chip.real { border-top-width: 3px; }
-  .chip:hover { color: var(--c); }
+  .chip:hover { color: var(--ink-c); }
   .chip:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
   .chip .lv { font-size: 10.5px; letter-spacing: .1em; color: var(--dust); }
-  .chip[aria-current="page"] { color: var(--c); font-weight: 500; }
-  .chip[aria-current="page"] .lv { color: var(--c); opacity: .8; }
+  .chip[aria-current="page"] { color: var(--ink-c); font-weight: 500; }
+  .chip[aria-current="page"] .lv { color: var(--ink-c); opacity: .8; }
 </style>

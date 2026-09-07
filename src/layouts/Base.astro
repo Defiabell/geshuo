@@ -16,10 +16,18 @@ const { title, description = '同一出戏，各地各演一遍。', noindex = f
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
     />
   </head>
   <body>
-    <div class="wrap"><slot /></div>
+    <div class="wrap">
+      {/*
+        样张的套准十字。印刷厂的校色样张四角都有这个记号，用来看几色对没
+        对齐——这个站的全部主张就是「对不齐」，所以它是这里最名正言顺的
+        装饰：它有本职工作。两个纯 CSS 十字，没有额外请求。
+      */}
+      <div class="trim" aria-hidden="true"><span></span><span></span></div>
+      <slot />
+    </div>
   </body>
 </html>

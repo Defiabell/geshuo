@@ -10,22 +10,29 @@ const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 // 而且这个游戏的产出是要拿来判断 AI 音准的。
 const clips = takes
   .filter((p) => p.source === 'tts')
-  .flatMap((p) =>
-    p.lines
+  .flatMap((p) => {
+    // content.ts 的闸门保证「tts 演绎必有 dialectId」（真人才挂 placeCode）。
+    // 把那条不变量在这里写出来，而不是拿 ! 蒙过去——闸门哪天变了，
+    // 这里要明确地炸，而不是给出一道答案是 undefined 的题。
+    const { dialectId } = p;
+    if (dialectId === undefined) throw new Error(`AI 演绎 ${p.id} 没有方言 id，进不了题库`);
+    const dialectName = dialects.get(dialectId)?.name;
+    if (dialectName === undefined) throw new Error(`AI 演绎 ${p.id} 指向不存在的方言：${dialectId}`);
+    return p.lines
       .filter((l) => l.audio)
       .map((l) => ({
         clip: `${p.id}/${l.beatId}`,
         audio: l.audio!,
-        dialectId: p.dialectId,
-        dialectName: dialects.get(p.dialectId)!.name,
+        dialectId,
+        dialectName,
         sceneTitle: scenes.get(p.sceneId)!.title,
         text: l.textDialect,
-      })),
-  );
+      }));
+  });
 
 const options = [...new Set(clips.map((c) => c.dialectId))].map((id) => ({
   id,
-  name: dialects.get(id)!.name,
+  name: clips.find((c) => c.dialectId === id)!.dialectName,
 }));
 ---
 <Base

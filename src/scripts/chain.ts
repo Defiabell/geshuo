@@ -18,6 +18,16 @@ import { pan } from './spatial';
  * 每一列还带一个声像值（data-pan，北在左南在右，见 src/lib/geo.ts）。连听
  * 因此不再是四段音频首尾相接，而是一次从北到南的移动——声音从它那一列在
  * 屏幕上的位置传来。空间化失败一律静默降级成普通播放。
+ *
+ * ## 色条（.seg）
+ *
+ * 页面上那条按真实时长切分的彩色横条不是装饰，它是**这个播放器的进度条**
+ * （见 src/lib/proof.ts）。一条东西同时干三件事：告诉你各地把同一句话说了
+ * 多久、正在放哪一段、点哪儿能跳过去。
+ *
+ * 段与列靠 `data-seg` / `data-key` 配对，不靠 DOM 顺序——列里可能有没音频
+ * 的（`data-audio=""`），色条里没有，按下标配对会整条错位。没有色条的页面
+ * 这段代码全程是空操作。
  */
 
 const GAP_MS = 320;
@@ -37,8 +47,16 @@ export function initChain(root: HTMLElement): void {
   const btnOf = (col: HTMLElement) => col.querySelector<HTMLButtonElement>('.one');
   const resetIcons = () => cols.forEach((c) => setPlayIcon(btnOf(c), 'play'));
 
+  const segs = Array.from(root.querySelectorAll<HTMLElement>('.seg[data-seg]'));
+  const segOf = (col: HTMLElement) =>
+    segs.find((s) => s.dataset.seg === col.dataset.key && col.dataset.key !== undefined) ?? null;
+
   const clear = () => {
     cols.forEach((c) => c.classList.remove('on'));
+    segs.forEach((s) => {
+      s.classList.remove('on');
+      s.style.setProperty('--p', '0');
+    });
     resetIcons();
   };
 
@@ -60,8 +78,20 @@ export function initChain(root: HTMLElement): void {
     currentCol = col;
     paused = false;
     const my = ++generation;
+    const seg = segOf(col);
+    seg?.classList.add('on');
     audio = new Audio(col.dataset.audio!);
     pan(audio, Number(col.dataset.pan ?? 0));
+    if (seg) {
+      // timeupdate 大约每 250ms 一次，画一条进度足够，比 rAF 省得多。
+      // 时长拿不到（metadata 还没到）时不画，也不编一个百分比。
+      audio.addEventListener('timeupdate', () => {
+        if (my !== generation || !audio) return;
+        const d = audio.duration;
+        if (!Number.isFinite(d) || d <= 0) return;
+        seg.style.setProperty('--p', String(Math.min(100, (audio.currentTime / d) * 100)));
+      });
+    }
     audio.addEventListener('ended', () => {
       if (my !== generation) return;
       setPlayIcon(btnOf(col), 'play');
@@ -98,6 +128,11 @@ export function initChain(root: HTMLElement): void {
     chainBtn.textContent = '■ 停';
     chain(0);
   });
+
+  // 点色条上的一段 = 点那一列的播放键。不复制播放逻辑，只转发。
+  for (const col of cols) {
+    segOf(col)?.addEventListener('click', () => btnOf(col)?.click());
+  }
 
   for (const col of cols) {
     btnOf(col)?.addEventListener('click', () => {

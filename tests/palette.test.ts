@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { colorFor, hueFor, warmth } from '../src/lib/palette';
+import { colorFor, hueFor, rampStops, warmth } from '../src/lib/palette';
 import { loadDialects } from '../src/lib/dialect-tree';
 
 const DATA_DIR = new URL('../src/data/', import.meta.url).pathname;
 
 /** 色相是环形的，比较距离必须绕短边 */
 const hueDist = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+
+/** 拆 oklch(L C H)。2026-09-07 起全站输出 OKLCH——这里的角度是 Oklab 色相，
+ *  跟 HSL 的度数不是一套刻度（同一个蓝：HSL 210°，OKLCH 243°）。 */
+const parse = (css: string) => {
+  const m = css.match(/oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/);
+  if (!m) throw new Error(`不是 oklch 颜色：${css}`);
+  return { l: Number(m[1]), c: Number(m[2]), h: Number(m[3]) };
+};
 
 /**
  * 颜色是「这条离真实有多近」的视觉表达，不是装饰。这几条钉住那个含义，
@@ -19,9 +27,10 @@ describe('方言配色', () => {
     expect(warmth(37)).toBeLessThan(warmth(23));
   });
 
+  // 刻度是 OKLCH：蓝在 240–270，赭红在 25–50。跟 HSL 的度数不通用。
   it('南北两端落在该有的色系里：北端偏蓝，南端偏赭', () => {
-    expect(hueDist(hueFor(46), 215)).toBeLessThan(40);
-    expect(hueDist(hueFor(20), 20)).toBeLessThan(40);
+    expect(hueDist(hueFor(46), 250)).toBeLessThan(25);
+    expect(hueDist(hueFor(20), 35)).toBeLessThan(25);
   });
 
   it('超出南北端的纬度不会溢出色阶', () => {
@@ -38,26 +47,44 @@ describe('方言配色', () => {
   it('没有任何纬度落进绿色区间——中纬度是这条轴最容易翻车的地方', () => {
     for (let lat = 18; lat <= 50; lat += 1) {
       const h = hueFor(lat);
-      expect(h < 75 || h > 165, `纬度 ${lat}° 的色相 ${h}° 落进绿区了`).toBe(true);
+      // OKLCH 的绿大致在 120–180（纯绿 ≈142，黄 ≈110）
+      expect(h < 110 || h > 185, `纬度 ${lat}° 的色相 ${h}° 落进绿区了`).toBe(true);
     }
   });
 
   it('中纬度也得有彩度，不能褪成灰——真人那一列正好落在这一段', () => {
     for (let lat = 28; lat <= 42; lat += 2) {
-      const sat = Number(colorFor({ lat, level: 'point' }).match(/hsl\(\d+ (\d+)%/)![1]);
-      expect(sat, `纬度 ${lat}° 褪成灰了`).toBeGreaterThanOrEqual(15);
+      const { c } = parse(colorFor({ lat, level: 'point' }));
+      expect(c, `纬度 ${lat}° 褪成灰了`).toBeGreaterThanOrEqual(0.05);
     }
   });
 
-  it('层级越细饱和度越高——颜色越实，和虚实语法同向', () => {
-    const sat = (level: 'supergroup' | 'group' | 'point') =>
-      Number(colorFor({ lat: 37, level }).match(/hsl\(\d+ (\d+)%/)![1]);
-    expect(sat('point')).toBeGreaterThan(sat('group'));
-    expect(sat('group')).toBeGreaterThan(sat('supergroup'));
+  it('层级越细彩度越高——颜色越实，和虚实语法同向', () => {
+    const c = (level: 'supergroup' | 'group' | 'point') =>
+      parse(colorFor({ lat: 37, level })).c;
+    expect(c('point')).toBeGreaterThan(c('group'));
+    expect(c('group')).toBeGreaterThan(c('supergroup'));
+  });
+
+  // 三条轴解耦：同一个方言换用途只该差明度，色相和彩度必须一模一样。
+  // 上一版把明度和色相混在 HSL 里，色条最右一段总是发白，根子就在这儿。
+  it('明度只由用途定，不牵动色相与彩度', () => {
+    const a = parse(colorFor({ lat: 37, level: 'point' }, 0.42));
+    const b = parse(colorFor({ lat: 37, level: 'point' }, 0.62));
+    expect(b.l).toBeGreaterThan(a.l);
+    expect(b.h).toBe(a.h);
+    expect(b.c).toBe(a.c);
+  });
+
+  // 同一档明度下，全色相的感知亮度一致——这是换 OKLCH 的全部理由
+  it('南北两端在同一明度上一样重', () => {
+    expect(parse(colorFor({ lat: 44, level: 'point' })).l).toBe(
+      parse(colorFor({ lat: 23, level: 'point' })).l,
+    );
   });
 
   it('没有坐标的分类节点给中性墨色，不编一个位置', () => {
-    expect(colorFor({ lat: undefined, level: 'supergroup' })).toContain('8%');
+    expect(parse(colorFor({ lat: undefined, level: 'supergroup' })).c).toBeLessThan(0.02);
   });
 
   it('真实数据里，同场对比的方言两两可辨（绕环色相至少差 24 度）', () => {
@@ -72,5 +99,26 @@ describe('方言配色', () => {
           .toBeGreaterThanOrEqual(24);
       }
     }
+  });
+});
+
+/**
+ * 报头就是这条轴的图例（一字一色）。它不挂在具体地方上，所以只需要保证
+ * 两件事：档位数对得上，方向是北→南。
+ */
+describe('色阶图例', () => {
+  it('给几档就出几个色', () => {
+    expect(rampStops(4).length).toBe(4);
+    expect(rampStops(0)).toEqual([]);
+  });
+
+  it('从冷到暖，跟颜色轴同向', () => {
+    const [first, , , last] = rampStops(4);
+    expect(hueDist(parse(first).h, hueFor(46))).toBeLessThan(1);
+    expect(hueDist(parse(last).h, hueFor(20))).toBeLessThan(1);
+  });
+
+  it('一档时取中点，不是端点', () => {
+    expect(rampStops(1)[0]).not.toBe(rampStops(2)[0]);
   });
 });

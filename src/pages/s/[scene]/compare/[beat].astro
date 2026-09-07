@@ -6,6 +6,7 @@ import { loadSite, takesForBeat } from '../../../../lib/content';
 import { identityOf } from '../../../../lib/identity';
 import { panFor } from '../../../../lib/geo';
 import { chainSeconds } from '../../../../lib/audio';
+import { segments } from '../../../../lib/proof';
 import { colorFor } from '../../../../lib/palette';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../../../../lib/verification';
 import { AGE_LABELS } from '../../../../lib/types';
@@ -75,10 +76,15 @@ const grainHeadline = allTts
   ? `以下均为 AI 合成语音，标注的是方言${levelPhrase}，不代表任何具体县市。`
   : `除真人录音列外，以下 AI 合成语音标注的是方言${levelPhrase}，不代表任何具体县市。`;
 
-// 时间轴分段：按真实时长切分（借自方向 B）。这条比「共 24 秒」有用得多——
-// 一眼能看出粤语最短、成渝最长，而那本身就是方言差异的一部分。
-const playable = columns.filter((c) => c.line.audio && c.line.durationMs !== undefined);
-const hasTimeline = playable.length > 1 && playable.length === columns.filter((c) => c.line.audio).length;
+/**
+ * 色条：按真实时长切分，兼任这个播放器的进度条与选段器（见 src/lib/proof.ts）。
+ *
+ * 它比「共 43 秒」有用得多——一眼能看出粤语最短、武城最长，而那本身就是
+ * 方言差异的一部分。缺任何一条时长就整条不画，宽度不能是估的。
+ */
+const bar = segments(
+  columns.map((c) => ({ identity: c.dialect, audio: c.line.audio, durationMs: c.line.durationMs })),
+);
 
 // 用词完全相同的列只展示一次台词。
 // 真人录音确认「AI 那句就是我说的」时（accept 里的「同ai」），两列会一字不差，
@@ -124,37 +130,46 @@ const enriched = columns.map((c, i) => {
   )}
 
   {playableCount > 1 && (
-    <div class="bar">
-      <button class="btn-chain" id="chain" data-idle={`▶ ${playableCount} 地连听`}>▶ {playableCount} 地连听</button>
-      <span class="bar-hint">
-        从北到南连着放完{totalSeconds !== null && `——这一拍 ${totalSeconds} 秒`}。戴耳机，声音会从左边走到右边。
-      </span>
-      <button class="btn-save" id="save-card" type="button">存成图片</button>
-    </div>
-  )}
-
-  {hasTimeline && (
-    <div class="timeline" aria-hidden="true">
-      {playable.map(({ dialect, line }) => (
-        <i
-          style={`flex:${line.durationMs};--c:${colorFor(dialect, 42)}`}
-          title={`${dialect.name} ${(line.durationMs! / 1000).toFixed(1)} 秒`}
-        ><b>{dialect.name}</b><em>{(line.durationMs! / 1000).toFixed(1)}s</em></i>
-      ))}
-    </div>
+    <>
+      {/* 连听键长在色条头上，整条读起来是一件乐器，不是一个按钮加一张图 */}
+      <div class="rig">
+        <button class="btn-chain" id="chain" data-idle={`▶ ${playableCount} 地连听`}>▶ {playableCount} 地连听</button>
+        {bar.length > 0 ? (
+          <div class="colorbar">
+            {bar.map((sg) => (
+              <button
+                class="seg"
+                type="button"
+                data-seg={sg.key}
+                style={`flex:${sg.ms};--c:${sg.color}`}
+                aria-label={`播放${sg.name}，${sg.label} 秒`}
+              ><b>{sg.name}</b><em>{sg.label}s</em></button>
+            ))}
+          </div>
+        ) : (
+          <span class="bar-hint">从北到南连着放完。戴耳机，声音会从左边走到右边。</span>
+        )}
+      </div>
+      <div class="bar-foot">
+        <span class="bar-hint">
+          点色条上任意一段可以只听那一段{totalSeconds !== null && `　·　整条 ${totalSeconds} 秒`}
+        </span>
+        <button class="btn-save" id="save-card" type="button">存成图片</button>
+      </div>
+    </>
   )}
 
   <div class="compare" id="compare">
     {enriched.map(({ dialect, take, line, sameAs }) => {
       const human = take.source === 'human';
       return (
-        <div class={`col ${human ? 'real' : 'ai'}`} data-pan={panFor(dialect.lat)} data-audio={line.audio ?? ''} style={`--c:${colorFor(dialect)}`}>
+        <div class={`col ${human ? 'real' : 'ai'}`} data-key={dialect.id} data-pan={panFor(dialect.lat)} data-audio={line.audio ?? ''} style={`--c:${colorFor(dialect)}`}>
           <h2>
             <span class="nm">{dialect.name}</span>
             <span class="lv2">
               {levelLabel(dialect.level)} · {human ? '真人' : 'AI'}{take.age && ` · ${AGE_LABELS[take.age]}`}
             </span>
-            {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
+            {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}></button>}
           </h2>
           <p class={`said ${human ? 'grain-real' : 'grain-ai'}`}>{line.textDialect}</p>
           {sameAs && <p class="same">用词与{sameAs}一字不差——这一句是本地人认下来的，差别在发音里</p>}
@@ -211,16 +226,40 @@ const enriched = columns.map((c, i) => {
   .cta:hover { border-bottom-color: var(--cut-lit); }
   .cta:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
 
-  /* 红只留给「正在响」和这个主按钮，整页红色出现次数屈指可数 */
-  .bar { display: flex; gap: 16px; align-items: center; margin: 22px 0 12px; flex-wrap: wrap; }
+  /* 连听键 + 色条 = 一件乐器 */
+  .rig { display: flex; align-items: stretch; gap: 2px; margin: 22px 0 0; flex-wrap: wrap; }
   .btn-chain {
-    font-family: var(--font-ui); font-size: 14px; cursor: pointer;
+    font-family: var(--font-ui); font-size: 14px; cursor: pointer; white-space: nowrap;
     background: var(--ink); color: var(--night); border: none;
-    padding: 12px 24px; border-radius: 1px; transition: background .2s;
+    padding: 0 24px; height: 42px; transition: background .2s;
   }
   .btn-chain:hover { background: var(--live); }
   .btn-chain:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
-  .btn-save { font-family: "Noto Sans SC", sans-serif; font-size: 13px; cursor: pointer;
+  .colorbar { display: flex; gap: 2px; flex: 1 1 420px; min-width: 260px; }
+  /* 淡色调一律在 oklab 里混：sRGB 等比例混色出来轻重不一，赭色那段会发白 */
+  .seg {
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    position: relative; overflow: hidden; cursor: pointer; min-width: 0;
+    height: 42px; border: none; border-top: 3px solid var(--ink-c); padding: 0 0 0 9px;
+    background: color-mix(in oklab, var(--c) 30%, var(--night));
+    display: flex; align-items: center; gap: 7px; text-align: left; transition: background .18s;
+  }
+  .seg:hover { background: color-mix(in oklab, var(--c) 42%, var(--night)); }
+  .seg:focus-visible { outline: 2px solid var(--live); outline-offset: -2px; }
+  .seg b, .seg em {
+    position: relative; z-index: 1; font-family: var(--font-mono); font-style: normal;
+    font-weight: 500; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-c); white-space: nowrap;
+  }
+  .seg em { opacity: .72; font-variant-numeric: tabular-nums; }
+  /* 进度：--p 由 chain.ts 按 timeupdate 写入 */
+  .seg::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: calc(var(--p, 0) * 1%); background: color-mix(in oklab, var(--c) 42%, transparent);
+  }
+  .seg.on { background: color-mix(in oklab, var(--c) 48%, var(--night)); }
+  .seg.on b { color: var(--ink); }
+  .bar-foot { display: flex; align-items: baseline; gap: 16px; margin: 10px 0 26px; flex-wrap: wrap; }
+  .btn-save { font-family: var(--font-ui); font-size: 13px; cursor: pointer;
     border: 1px solid var(--rule); background: transparent; color: var(--ink-2);
     padding: 8px 15px; border-radius: 2px; margin-left: auto; transition: border-color .18s, color .18s; }
   .btn-save:hover { border-color: var(--cut); color: var(--cut); }
@@ -228,50 +267,51 @@ const enriched = columns.map((c, i) => {
   .btn-save[disabled] { opacity: .5; cursor: default; }
   .bar-hint { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); }
 
-  /* 时间轴：按真实时长切分。哪个方言把同一句话说得更长，一眼可见 */
-  .timeline { display: flex; gap: 2px; margin: 0 0 26px; }
-  .timeline i {
-    height: 30px; background: color-mix(in srgb, var(--c) 30%, var(--night));
-    border-top: 2px solid var(--c); position: relative; overflow: hidden;
-    display: flex; align-items: center; gap: 7px; padding-left: 9px; min-width: 0;
-  }
-  .timeline i b, .timeline i em {
-    font-family: var(--font-ui); font-style: normal; font-weight: 500;
-    font-size: 10.5px; letter-spacing: .06em; color: var(--c); white-space: nowrap;
-  }
-  .timeline i em { opacity: .7; font-variant-numeric: tabular-nums; }
-
   .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 30px; }
-  .col { --c: var(--ink-2); display: flex; flex-direction: column; }
+  .col {
+    --c: var(--ink-2);
+    /* 前景油墨：深色主题下提亮，否则真人那列（最该显眼的）会最暗 */
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    display: flex; flex-direction: column;
+  }
   .col h2 {
     font-family: var(--font-ui); font-size: 12px; margin: 0 0 15px; letter-spacing: .1em;
-    color: var(--c); font-weight: 500; padding-bottom: 8px;
-    border-bottom: 2px solid var(--c); display: flex; align-items: baseline; gap: 8px;
+    color: var(--ink-c); font-weight: 500; padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink-c); display: flex; align-items: baseline; gap: 8px;
   }
   .col.ai h2 { border-bottom-style: dashed; opacity: .82; }
   .col.real h2 { border-bottom-width: 3px; }
   .nm { flex: 1; }
   .lv2 { font-size: 10.5px; color: var(--dust); letter-spacing: .08em; }
+  /* 播放键是一块油墨，不是圆圈——全站统一（见 src/lib/proof.ts） */
   .one {
-    font-size: 10px; line-height: 1; cursor: pointer; padding: 0;
-    background: transparent; border: 1px solid var(--rule); color: var(--c);
-    width: 20px; height: 20px; border-radius: 50%; flex: none;
-    transition: background .18s, color .18s, border-color .18s;
+    cursor: pointer; padding: 0; background: var(--ink-c); border: none; border-radius: 0;
+    width: 13px; height: 13px; flex: none; align-self: center;
+    transition: transform .16s;
   }
-  .one:hover { background: var(--c); border-color: var(--c); color: var(--night); }
+  .one:hover { transform: scale(1.25); }
+  .col.ai .one { opacity: .78; }
   .one:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
 
   /* 虚实语法：AI 的字发虚偏灰，真人的字锐利色实 */
   .said {
     font-family: var(--font-display); font-size: clamp(18px, 2.1vw, 22px);
-    line-height: 1.62; margin: 0 0 12px; letter-spacing: .01em; color: var(--c);
+    line-height: 1.62; margin: 0 0 12px; letter-spacing: .01em; color: var(--ink-c);
   }
-  .col.ai .said { color: color-mix(in srgb, var(--c) 60%, var(--dust)); }
+  .col.ai .said { color: color-mix(in oklab, var(--ink-c) 60%, var(--dust)); }
   .same {
     font-family: var(--font-ui); font-size: 11.5px; color: var(--dust);
     margin: -4px 0 12px; padding-left: 10px; border-left: 2px solid var(--rule); line-height: 1.7;
   }
-  .trans { font-size: 13.5px; color: var(--ink-2); margin: 0 0 12px; line-height: 1.75; }
+  /*
+   * 普通话对照用官方体（Noto Sans SC），方言原话用宋体。
+   * 这不是排版口味，是这个站的立场：**标准语是表格和路牌上的字，
+   * 方言是人说话的字**。同一段意思在两种字体里，差别自己会说话。
+   */
+  .trans {
+    font-family: var(--font-ui); font-size: 13px; color: var(--ink-2);
+    margin: 0 0 12px; line-height: 1.8;
+  }
   /* 注释升格：这是这个站独有的价值，给它悬挂缩进，不再压成灰色小字 */
   .gloss {
     font-family: var(--font-ui); font-size: 12.5px; color: var(--ink-2); margin: 0;
@@ -281,10 +321,10 @@ const enriched = columns.map((c, i) => {
     font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .09em;
     margin-top: 16px; color: var(--dust); align-self: flex-start;
   }
-  .tag.human { color: var(--c); font-weight: 500; }
+  .tag.human { color: var(--ink-c); font-weight: 500; }
 
   /* 连听时当前列亮起来——四条连着放完，得知道刚才那句是哪儿的 */
-  .col.on .said { color: var(--c); opacity: 1; text-shadow: none; }
+  .col.on .said { color: var(--ink-c); opacity: 1; text-shadow: none; }
   .col.on h2 { opacity: 1; border-bottom-color: var(--live); }
   .col.on .lv2 { color: var(--live); }
 </style>

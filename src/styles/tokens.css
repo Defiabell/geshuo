@@ -11,6 +11,24 @@
  * 2. **方言的颜色来自地理**（见 src/lib/palette.ts）：纬度定色相，层级定
  *    饱和度——层级越细，颜色越实，正好和虚实语法同向。
  * 3. **免责声明降级**。它是免责声明，不该比台词还抢眼。
+ *
+ * ── 2026-09-07 追加：套色样张 ──────────────────────────────────
+ *
+ * 上面那套「虚实」是**读的语法**，这一版补的是**看的世界**：印刷厂里套不准
+ * 的样张。同一版内容印了几遍，每遍一色油墨，永远差着一点没对上——「各说
+ * 各话」最准的一张图就是它。详见 src/lib/proof.ts。
+ *
+ * 随之落到令牌层的三样东西：
+ * - `--grain-*`：纸的肌理。平涂的米色是"没做选择"，纸有齿才有材质。
+ * - `--blend`：油墨叠印用 multiply（浅色纸），深色底下反过来用 screen。
+ * - `--font-ui` 升格为**官方体**：普通话对照、层级标注、免责声明一律用它，
+ *   方言原话一律用 `--font-display`。字体分工就是这个站的立场——
+ *   标准语是表格和路牌的字，方言是人说话的字。
+ *
+ * 方言原话为什么不换一个更有个性的展示体：这个站的正文里全是生僻方言用字
+ * （冇、咩、瞟、嗦、恁），任何字数不全的展示体都会在**最关键的那个字上掉
+ * 字**，回落成另一套字形。所以正文只用字数齐全的 Noto Serif SC，个性靠
+ * 字重、字号和字距做，不靠换字体家族。
  */
 :root {
   --night: #EFEDE6;   /* 页面底：偏冷的纸白，不再是暖米黄 */
@@ -33,7 +51,31 @@
   --body-fg: var(--ink);
 
   --font-display: "Noto Serif SC", "Songti SC", serif;
+  /** 官方体：普通话、标注、免责声明。表格和路牌用的那种字 */
   --font-ui: "Noto Sans SC", -apple-system, sans-serif;
+  /** 印工的批注：秒数、层级代码、套准标记 */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* 纸与墨 */
+  --grain-op: .05;
+  --grain-blend: multiply;
+  /* 油墨叠印 */
+  --blend: multiply;
+
+  /**
+   * 油墨提亮量。
+   *
+   * 地理色（src/lib/palette.ts）是按纸白调的：OKLCH 明度 0.42 那一档在米色
+   * 纸上正好，在近黑的底上就糊进背景。深色主题下把它往 --ink 混一部分——
+   * 混的是**当前主题的墨色**，所以浅色主题给 0% 时公式退化成原色，
+   * 一条规则同时对两个主题成立，不用写两套颜色。
+   *
+   * 用法：需要把油墨当**前景**（字、墨点、标签）的地方取
+   * `--ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift))`。
+   * 当背景色用的地方不需要——那些是 color-mix 到底色上的淡色调，本来就跟着
+   * 主题走。
+   */
+  --ink-lift: 0%;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,6 +93,11 @@
     --frame: #3A2717;
     --glow: rgba(239, 221, 176, .2);
     --body-fg: var(--ink);
+    /* 深底上灰噪点要提亮而不是压暗，油墨叠印同理 */
+    --grain-op: .07;
+    --grain-blend: screen;
+    --blend: screen;
+    --ink-lift: 46%;
   }
 }
 
@@ -68,6 +115,10 @@
   --frame: #3A2717;
   --glow: rgba(239, 221, 176, .2);
   --body-fg: var(--ink);
+  --grain-op: .07;
+  --grain-blend: screen;
+  --blend: screen;
+  --ink-lift: 46%;
 }
 
 * { box-sizing: border-box; }
@@ -82,6 +133,34 @@ body {
 }
 
 .wrap { max-width: 1180px; margin: 0 auto; }
+
+/*
+ * 纸的齿。feTurbulence 现画，不引外部图片——一张噪点图为了 4KB 再开一个
+ * 请求不值得，而且它得跟着主题换叠加方式。
+ *
+ * 固定定位 + pointer-events:none：它不参与布局，也不吃点击。
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--grain-op);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+@media print { body::before { display: none; } }
+
+/* 套准十字：两条 1px 线交叉，不用 SVG 也不用图 */
+.trim { display: flex; justify-content: space-between; padding-top: 18px; }
+.trim span {
+  width: 9px; height: 9px; opacity: .8;
+  background:
+    linear-gradient(var(--rule), var(--rule)) center / 1px 100% no-repeat,
+    linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat;
+}
 
 /*
  * ── 虚实语法 ────────────────────────────────────────────────────

@@ -1,1 +1,90 @@
-See [AGENTS.md](AGENTS.md) — 项目不变量与开发约定都在那里，本文件不再单独维护一份。
+# 各说各话 —— 项目不变量
+
+> 这个文件从第一次提交起就写着「不变量都在 AGENTS.md 里」——而它自己就是
+> AGENTS.md，指向自己，等于什么都没写（2026-09-07 发现并补上）。
+>
+> 下面每一条都是**踩过或差点踩过**的坑。改代码前扫一遍；跟这里冲突的改动，
+> 先改这个文件、把理由写清楚，再动代码。细节推理都在对应文件的顶部注释里，
+> 这里只列结论和索引。
+
+## 一、内容的诚实（最高优先级）
+
+1. **AI 不许假装是某个县的人。** 方言节点上的 `noAiReason` 一有值，任何
+   `source: tts` 的演绎挂到它上面就构建失败。`冀鲁官话` 就带着这个标记——
+   模型给出的「冀鲁」几乎全不对，而那恰恰是 owner 的家乡话。见
+   `src/lib/content.ts` 的两道闸（`noAiReason` 与 `TTS_FORBIDDEN_LEVELS`，
+   故意不合并成一条）。
+2. **真人挂行政区划，AI 挂方言区，二者互斥。** `Take.placeCode`（GB/T 2260
+   六位）与 `Take.dialectId` 只能有一个。页面统一面对 `identityOf()` 归一后的
+   `Identity`，不在每个页面写 if。
+3. **真人可以只录一部分，AI 必须录全。** 一个人只录得动两拍就是两拍；
+   AI 没有理由缺。
+4. **字是大意，音是证据。** 真人录音的 `transcript: approximate` 必须在页面上
+   说出来：很多方言词没有通行写法，只能拿同音字凑。
+5. **量不到的数字不显示，绝不估。** 时长缺任何一条，色条就整条不画、秒数就
+   不显示（`src/lib/audio.ts`、`src/lib/proof.ts`）。按字数估会差三倍。
+6. **脏话收，仇恨话不收。** 吵架戏里的粗口原样留着，那是方言的一部分；针对
+   族群／性别／地域／残障的攻击不收。立场写在 `/swearing/`。
+7. **合成脚本不碰真人录音。** `gen:audio` 遇到非 tts 演绎直接拒绝跑——真人
+   录音不可再生。
+
+## 二、投稿是只写通道
+
+8. `/api/upload` **没有读路由**；`.inbox/` 进 gitignore；任何投稿都不自动发布，
+   审核只在本地进行。
+9. **人机验证只加配额，永不拦真人。** Turnstile 过了给更高配额，没过也能投。
+   兜底是全局 500/日上限加 D1 的 `settings.uploads_enabled` 开关。
+10. **文字比音频更危险**（直接渲染、灌起来便宜）：入口清洗（`cleanText`）、
+    **输出转义**（审核台的 `esc()`），配额与音频同档。
+11. `public/audio/` 与 `.npmrc` 不进仓库。音频永远不入开源库。
+12. `TURNSTILE_SECRET` 只存在 Cloudflare Pages 的密钥里；**sitekey 是公开的**，
+    故意提交在 `src/lib/config.ts`。
+
+## 三、视觉语法（改样式前必读）
+
+13. **三条轴吃同一份坐标，各自的范围写在各自负责的文件里**：
+    纬度 → 颜色色相（`src/lib/palette.ts`）、纬度 → 立体声声像
+    （`src/lib/geo.ts`）、经度 → 阶梯缩进（`src/lib/proof.ts`）。
+    左＝北＝左耳，是一套东西，不许各自漂。
+14. **虚实语法**：AI 的字发虚、边虚线；真人的字锐利、线实。
+    `.grain-ai` / `.grain-real` 在 `src/styles/tokens.css`，全局，不许各页自造。
+15. **颜色一律 OKLCH，三个变量三种含义**：色相＝纬度，彩度＝层级（越细越实），
+    明度＝用途。HSL 的 L 不是感知明度，混在一起会让色条最右一段永远发白。
+    淡色调用 `color-mix(in oklab, …)`，不用 `in srgb`。
+16. **前景油墨走 `--ink-c`**（`color-mix(in oklab, var(--c), var(--ink) var(--ink-lift))`）。
+    深色主题靠 `--ink-lift` 提亮；忘了这条，真人那列（最该显眼的）会最暗。
+17. **播放键是一块油墨，不是圆圈。** 全站没有圆——地图上的点除外，那是地图记号。
+18. **方言正文只用字数齐全的字体**（Noto Serif SC）。正文里全是生僻方言用字
+    （冇、咩、瞟、嗦、恁），任何字数不全的展示体都会在最关键那个字上掉字。
+    个性靠字重字号字距，不靠换字体家族。
+19. **官方体 vs 说话的字**：普通话对照、标注、免责声明用 `--font-ui`；
+    方言原话用 `--font-display`。这是立场，不是排版口味。
+20. **红只留给「正在响」和主 CTA。** 一段里三处强调等于没有强调。
+21. **试过并砍掉：套印错位的报头。** 理由在 `src/lib/proof.ts` 顶部——
+    南北渐变的调色板天生邻近偏深，叠印只会糊成一团黑加一道彩色投影。
+    别再试第四遍。
+
+## 四、代码约定
+
+22. **`.astro` 不进 `tsc` 的检查范围。** 组件 Props 的类型错配能安静地活很久
+    （`DialectChips` 声明 `Dialect[]` 却一直收 `Identity[]`，导致真人那枚 chip
+    一直显示「待录」）。**改完必须跑 `npm run check`**，不是只跑 `tsc`。
+23. **路径锚 `process.cwd()`，不要 `import.meta.url`。** rolldown 打包后
+    `import.meta.url` 指向产物自身的位置，相对深度算错。
+24. `getStaticPaths()` 是独立作用域：只共享 import，不共享模块里算好的常量。
+25. **运行时插进来的 DOM 套不上 scoped style。** Astro 的 scoped CSS 靠
+    `data-astro-cid-*`，`innerHTML` 新建的元素没有那个属性，必须 `<style is:global>`。
+26. **排期只有一处实现**（`src/lib/weekly.ts`）。首页和 `/weekly/` 各写一遍时，
+    一个带日期闸一个不带，同一个 CTA 前后对不上。构建期判断：写下一期不会
+    立刻上线，下次构建（在排期日之后）才换上去。
+27. **`chain.ts` 的两条不变量**：`stop()` 递增 `generation` 作废旧回调；
+    **暂停绝不递增**，否则暂停后 `'ended'` 推不动连听。
+28. 色条与列靠 `data-seg` / `data-key` 配对，**不靠 DOM 下标**——列里有没音频的，
+    色条里没有。
+
+## 五、发布
+
+29. `pnpm deploy` = `astro build && wrangler pages deploy`（Cloudflare Pages 直传）。
+    **合进 main ≠ 上线**，必须显式部署。
+30. 部署前的门槛：`npx vitest run`、`npm run check`、`npm run build`。
+    改了样式还要真的看一眼渲染结果（headless Chrome 截图），别只看构建通过。

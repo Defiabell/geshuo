@@ -4,7 +4,9 @@ import Base from '../layouts/Base.astro';
 import { loadSite } from '../lib/content';
 import { identityOf } from '../lib/identity';
 import { panFor } from '../lib/geo';
-import { colorFor } from '../lib/palette';
+import { colorFor, rampStops } from '../lib/palette';
+import { indentFor, segments } from '../lib/proof';
+import { weeklySchedule } from '../lib/weekly';
 
 // 首页不走 getStaticPaths，属于顶层 frontmatter 作用域，可以直接用
 // process.cwd() 声明常量——理由同 [scene]/compare/[beat].astro 里的注释：
@@ -15,10 +17,11 @@ const { scenes, takes, dialects, places } = loadSite(DATA_DIR);
 
 // 一句话挑战不混进「挑一出戏」——它是低门槛入口，戏是深度内容，
 // 摆在一起会让人以为一句话也要录五条。
-const weeklies = Array.from(scenes.values())
-  .filter((s) => s.weekly)
-  .sort((a, b) => (a.weekly! < b.weekly! ? 1 : -1));
-const featured = weeklies[0];
+//
+// 排期判断在 src/lib/weekly.ts，首页与 /weekly/ 共用一处：两处各写一遍时
+// 首页放上一期、CTA 点进去是下一期，当场对不上。
+const featured = weeklySchedule(scenes.values()).current;
+
 /**
  * 首页要出声。
  *
@@ -26,28 +29,53 @@ const featured = weeklies[0];
  * 是哑的。整个价值主张是「同一句话在几个地方并排响」，而不点进去的人永远
  * 体验不到。这是漏斗第一格漏了，不是小瑕疵。
  *
- * 所以本周那一句直接搬到首屏，带播放键、带声像。按纬度从北到南排，连听
- * 时声音也从左耳走到右耳（见 src/lib/geo.ts 的 panFor）。
+ * 所以本周那一句直接搬到首屏，带播放键、带声像、带色条。三条轴全是同一份
+ * 坐标算出来的（src/lib/proof.ts）：
+ * - 上下顺序与颜色 ← 纬度（北在上、色偏冷）
+ * - 缩进           ← 经度（西靠左、东靠右）
+ * - 声像           ← 纬度（北在左耳、南在右耳）
  */
-const featuredLines = featured
+const featuredRows = featured
   ? takes
       .filter((p) => p.sceneId === featured.id)
       .map((p) => {
-        const id = identityOf(p, dialects, places);
+        const identity = identityOf(p, dialects, places);
         const line = p.lines[0];
         return {
-          name: id.name,
+          identity,
           said: line?.textDialect ?? '',
-          audio: line?.audio ?? '',
-          pan: panFor(id.lat),
-          color: colorFor(id),
+          audio: line?.audio,
+          durationMs: line?.durationMs,
+          pan: panFor(identity.lat),
+          color: colorFor(identity),
+          // 96px 而不是默认 48：四个地方只跨 104–125°E，48px 的差别看着
+          // 像没对齐，不像阶梯。窄屏会在 CSS 里整体归零。
+          indent: indentFor(identity.lng, 96),
           human: p.source === 'human',
-          lat: id.lat ?? -90,
         };
       })
-      .sort((a, b) => b.lat - a.lat)
+      .sort((a, b) => (b.identity.lat ?? -90) - (a.identity.lat ?? -90))
   : [];
-const featuredPlayable = featuredLines.filter((l) => l.audio).length;
+const featuredPlayable = featuredRows.filter((l) => l.audio).length;
+// 色条：按真实时长切分，兼任播放进度条。缺时长就整条不画（见 proof.ts）
+const bar = segments(featuredRows);
+
+/**
+ * 报头：一字一色，取色阶的四档（palette.ts 的 rampStops）。
+ *
+ * 它不挂在任何具体地方上，它是**这个站的图例**——从北到南。所以四个字
+ * 读下来就是下面色条、地图、声像共用的那条轴。
+ *
+ * 试过让它印成套色错位的重影（同四个字印四遍、按经纬度错开），失败了，
+ * 原因记在 src/lib/proof.ts 顶部：这条南北渐变的调色板天生邻近、天生偏深，
+ * 叠印只会糊成一团黑加一道彩色投影。
+ */
+const WORDMARK = [...'各说各话'];
+const wordInks = rampStops(WORDMARK.length);
+// 「几地在录」是数据推出来的：报头旁边这行小字会自己跟着这个项目长大
+const placeCount = new Set(
+  takes.map((t) => identityOf(t, dialects, places)).map((d) => d.id),
+).size;
 
 // 首页那句宣传语里的地名从数据推出来，不写死。
 // 2026-09-05 的教训：原文写着「在德州、青岛、广州之间横着听过去」，而德州和青岛
@@ -59,22 +87,32 @@ const cards = Array.from(scenes.values())
   .filter((scene) => !scene.weekly)
   .map((scene) => {
     const forScene = takes.filter((p) => p.sceneId === scene.id);
+    const ids = forScene.map((p) => identityOf(p, dialects, places));
     return {
       scene,
-      count: forScene.length,
-      first: forScene[0] ? identityOf(forScene[0], dialects, places).id : undefined,
-      names: forScene.map((p) => identityOf(p, dialects, places).name),
+      // 按纬度排，和全站一致：一排墨点从冷到暖，就是一条从北到南的路线
+      ids: ids.slice().sort((a, b) => (b.lat ?? -90) - (a.lat ?? -90)),
+      beats: scene.beats.length,
+      first: ids[0]?.id,
     };
   })
   // 没有任何演绎的场景没有可点进去的目的地——first 会是 undefined，
   // 卡片链接会拼出 /s/{id}/undefined/ 死链。同款 guard 见
   // s/[scene]/compare/[beat].astro 的 getStaticPaths()。
-  .filter((c) => c.count > 0);
+  .filter((c) => c.ids.length > 0);
 ---
 <Base title="各说各话">
+  {/* 报头 = 图例。四个字，一字一色，从北到南——底下的色条读的是同一条轴 */}
   <header class="top">
-    <div class="eyebrow">方言场景剧场</div>
-    <h1>各说各话</h1>
+    <div class="slug">
+      <span>方言场景剧场</span>
+      <span class="ink-count">{placeCount} 地在录</span>
+    </div>
+
+    <h1 class="mast">
+      {WORDMARK.map((ch, i) => <i style={`--c:${wordInks[i]}`}>{ch}</i>)}
+    </h1>
+
     <p class="tagline">
       同一出戏，各地各演一遍。骨架统一，措辞自便——所以你能把「妈妈爆发」这一拍，
       在{showcase.join('、')}之间横着听过去。
@@ -82,29 +120,62 @@ const cards = Array.from(scenes.values())
   </header>
 
   {featured && (
-    <section class="hear">
-      <div class="wk-eyebrow">一句话挑战 · {featured.weekly}</div>
+    <section class="proof">
+      <div class="slug">
+        <span>一句话挑战 · {featured.weekly}</span>
+        <span class="legend">色序＝纬度　缩进＝经度</span>
+      </div>
       <h2 class="wk-title">{featured.title}</h2>
       <p class="wk-sit">{featured.situation}</p>
 
+      {/*
+        色条：印刷样张边上那排色块。宽度是真实时长，同时兼任播放进度条，
+        点一段就跳过去听那一段（见 src/scripts/chain.ts）。
+        连听键长在色条头上，整条读起来是一件乐器，不是一个按钮加一张图。
+      */}
       {featuredPlayable > 1 && (
-        <div class="wk-bar">
+        <div class="rig">
           <button class="btn-chain" id="chain" data-idle={`▶ ${featuredPlayable} 地连听`}>
             ▶ {featuredPlayable} 地连听
           </button>
-          <span class="wk-hint">从北到南连着放完。戴耳机——声音会从左边走到右边。</span>
+          {bar.length > 0 ? (
+            <div class="colorbar">
+              {bar.map((s) => (
+                <button
+                  class="seg"
+                  type="button"
+                  data-seg={s.key}
+                  style={`flex:${s.ms};--c:${s.color}`}
+                  aria-label={`播放${s.name}，${s.label} 秒`}
+                >
+                  <b>{s.name}</b><em>{s.label}s</em>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span class="wk-hint">从北到南连着放完。戴耳机——声音会从左边走到右边。</span>
+          )}
         </div>
       )}
 
-      <div class="wk-lines">
-        {featuredLines.map(({ name, said, audio, pan, color, human }) => (
-          <div class={`col wk-line ${human ? 'real' : 'ai'}`}
-               data-audio={audio} data-pan={pan} style={`--c:${color}`}>
+      {/*
+        阶梯：从上到下是北到南，从左到右是西到东。一块文字就是一张地图。
+        行首那个小方块是墨点，也是播放键——这个站的按钮是一块油墨，不是圆圈。
+      */}
+      <div class="stack">
+        {featuredRows.map(({ identity, said, audio, pan, color, indent, human }) => (
+          <div
+            class={`col line ${human ? 'real' : 'ai'}`}
+            data-audio={audio ?? ''}
+            data-key={identity.id}
+            data-pan={pan}
+            style={`--c:${color};--x:${indent}px`}
+          >
             {audio
-              ? <button class="one" type="button" aria-label={`播放${name}`}>▶</button>
-              : <span class="one blank" aria-hidden="true">·</span>}
-            <span class="wk-name">{name}</span>
-            <span class={human ? 'wk-said grain-real' : 'wk-said grain-ai'}>{said}</span>
+              ? <button class="one" type="button" aria-label={`播放${identity.name}`}></button>
+              : <span class="one blank" aria-hidden="true"></span>}
+            <span class="who">{identity.name}</span>
+            <span class={human ? 'said grain-real' : 'said grain-ai'}>{said}</span>
           </div>
         ))}
       </div>
@@ -120,17 +191,23 @@ const cards = Array.from(scenes.values())
     <a href="/swearing/"><b>脏话也是方言</b><span>立场说明 · 有投票</span></a>
   </nav>
 
-  <section>
-    <h2>挑一出戏</h2>
-    <div class="grid">
-      {cards.map(({ scene, count, first, names }) => (
-        <a class="card" href={`/s/${scene.id}/${first}/`}>
-          <h3>{scene.title}</h3>
-          <p class="sit">{scene.situation}</p>
-          <p class="meta">{count} 种说法 · {names.join(' / ')}</p>
-        </a>
-      ))}
-    </div>
+  <section class="plays">
+    <h2 class="slug"><span>挑一出戏</span><span class="legend">一个墨点＝一个地方</span></h2>
+    {cards.map(({ scene, ids, beats, first }) => (
+      <a class="play" href={`/s/${scene.id}/${first}/`}>
+        <h3>{scene.title}</h3>
+        <p class="sit">{scene.situation}</p>
+        <p class="meta">
+          <span class="dots">
+            {ids.map((d) => (
+              <i style={`--c:${colorFor(d, 0.5)}`} title={d.name}></i>
+            ))}
+          </span>
+          <span class="names">{ids.map((d) => d.name).join(' / ')}</span>
+          <span class="beats">{beats} 拍</span>
+        </p>
+      </a>
+    ))}
   </section>
 
   <footer>
@@ -146,77 +223,146 @@ const cards = Array.from(scenes.values())
 
 <script>
   import { initChain } from '../scripts/chain';
-  const hear = document.querySelector<HTMLElement>('.hear');
-  if (hear) initChain(hear);
+  const proof = document.querySelector<HTMLElement>('.proof');
+  if (proof) initChain(proof);
 </script>
 
 <style>
-  .top { padding: 64px 0 24px; display: flex; flex-direction: column; gap: 14px; }
-  .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); }
-  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(44px, 8vw, 76px); line-height: 1; color: var(--cut); letter-spacing: .04em; margin: 0; }
-  .tagline { font-size: 17px; color: var(--ink-2); max-width: 34em; margin: 0; }
-  /* 剪纸窗撤掉后这里原本的 64px 会留出一个明显的空洞——上面没东西了，不需要那么大的隔断 */
-  section { padding-top: 32px; }
-  .ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2px; margin-top: 34px; }
-  .ways a {
-    display: flex; flex-direction: column; gap: 4px; text-decoration: none;
-    background: var(--night-2); border: 1px solid var(--rule); padding: 16px 18px;
-    transition: border-color .2s, transform .2s;
+  /* ── 印工的批注：所有 mono 小字 ────────────────────────── */
+  .slug {
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em;
+    color: var(--dust); text-transform: uppercase;
   }
-  .ways a:hover { border-color: var(--cut); transform: translateY(-2px); }
-  .ways a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .ways b { font-family: "Noto Sans SC", sans-serif; font-size: 14.5px; color: var(--cut); font-weight: 600; }
-  .ways span { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
-  /* 首屏播放器：这是整个站唯一一个「不点也知道要干嘛」的东西 */
-  .hear { margin: 34px 0 8px; padding: 24px 26px 22px; background: var(--night-2);
-          border-left: 3px solid var(--cut); }
-  .wk-eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .2em; color: var(--dust); }
-  .wk-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4.4vw, 40px);
-              color: var(--cut); margin: 8px 0 4px; }
-  .wk-sit { font-size: 14px; color: var(--ink-2); margin: 0 0 18px; max-width: 34em; }
+  /* 批注要弱，但不能弱到看不见——第一版用 --rule，在纸白上直接消失了 */
+  .slug .legend, .slug .ink-count { color: var(--dust); opacity: .72; letter-spacing: .1em; }
 
-  .wk-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
-  .btn-chain { font-family: "Noto Sans SC", sans-serif; font-size: 14.5px; cursor: pointer;
-               background: var(--cut); color: var(--paper); border: 1px solid var(--cut);
-               padding: 11px 22px; border-radius: 2px; transition: background .18s; }
-  .btn-chain:hover { background: var(--cut-lit); border-color: var(--cut-lit); }
-  .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .wk-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+  /* ── 报头 ─────────────────────────────────────────────── */
+  .top { padding: 60px 0 26px; display: flex; flex-direction: column; gap: 16px; }
+  .mast {
+    margin: 0 0 6px; font-family: var(--font-display);
+    font-weight: 900; font-size: clamp(46px, 8.4vw, 82px); line-height: 1;
+    letter-spacing: .01em;
+  }
+  /* 前景油墨一律走 --ink-c（深色主题会提亮，见 tokens.css 的 --ink-lift） */
+  .mast i { font-style: normal; color: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift)); }
+  .tagline { font-size: 17px; color: var(--ink-2); max-width: 34em; margin: 0; }
 
-  .wk-lines { display: flex; flex-direction: column; gap: 2px; }
-  .wk-line { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
-             padding: 7px 10px; margin-left: -10px; border-radius: 2px;
-             transition: background .2s; }
-  /* 正在响的那一列亮起来——这是连听时唯一的进度指示 */
-  .wk-line.on { background: var(--paper); box-shadow: inset 2px 0 0 var(--live); }
-  .one { font-size: 11px; line-height: 1; cursor: pointer; color: var(--c, var(--ink-2));
-         background: none; border: 1px solid currentColor; border-radius: 50%;
-         width: 21px; height: 21px; flex: 0 0 21px; padding: 0; }
-  .one:hover { background: var(--c, var(--ink-2)); color: var(--paper); }
-  .one:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .one.blank { border-color: var(--rule); color: var(--rule); cursor: default; }
-  .wk-name { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--c, var(--dust));
-             letter-spacing: .08em; min-width: 6em; }
-  .real .wk-name { font-weight: 700; }
-  .wk-said { font-size: 17px; color: var(--ink); flex: 1 1 16em; }
-  .ai .wk-said { color: var(--ink-2); }
-  .wk-cta { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 20px 0 0; }
+  /* ── 本周一句话 ───────────────────────────────────────── */
+  .proof { margin: 26px 0 0; display: flex; flex-direction: column; gap: 0; }
+  .wk-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(30px, 4.6vw, 42px); color: var(--cut);
+    margin: 14px 0 6px; letter-spacing: .02em;
+  }
+  .wk-sit { font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-2); margin: 0 0 20px; max-width: 34em; }
+
+  /* 连听键长在色条头上：一件乐器 */
+  .rig { display: flex; align-items: stretch; gap: 2px; margin-bottom: 26px; flex-wrap: wrap; }
+  .btn-chain {
+    font-family: var(--font-ui); font-size: 13.5px; cursor: pointer; white-space: nowrap;
+    background: var(--cut); color: var(--paper); border: none;
+    padding: 0 22px; height: 40px; transition: background .18s;
+  }
+  .btn-chain:hover { background: var(--cut-lit); }
+  .btn-chain:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+  .colorbar { display: flex; gap: 2px; flex: 1 1 420px; min-width: 260px; }
+  /*
+   * 淡色调一律 color-mix(in oklab)，不用 in srgb：等比例的 sRGB 混色出来
+   * 轻重不一——赭色 30% 兑纸白读着比板岩蓝 30% 淡得多，色条最右一段因此
+   * 总像没上墨。感知空间里混才是等量。
+   */
+  .seg {
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    position: relative; overflow: hidden; cursor: pointer; min-width: 0;
+    height: 40px; border: none; border-top: 3px solid var(--ink-c); padding: 0 0 0 9px;
+    background: color-mix(in oklab, var(--c) 30%, var(--night));
+    display: flex; align-items: center; gap: 7px; text-align: left;
+    transition: background .18s;
+  }
+  .seg:hover { background: color-mix(in oklab, var(--c) 42%, var(--night)); }
+  .seg:focus-visible { outline: 2px solid var(--live); outline-offset: -2px; }
+  .seg b, .seg em {
+    position: relative; z-index: 1; font-family: var(--font-mono); font-style: normal;
+    font-weight: 500; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-c); white-space: nowrap;
+  }
+  .seg em { opacity: .72; font-variant-numeric: tabular-nums; }
+  /* 进度：--p 由 chain.ts 按 timeupdate 写入 */
+  .seg::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: calc(var(--p, 0) * 1%); background: color-mix(in oklab, var(--c) 42%, transparent);
+  }
+  .seg.on { background: color-mix(in oklab, var(--c) 48%, var(--night)); }
+  .seg.on b { color: var(--ink); }
+  .wk-hint { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); align-self: center; }
+
+  /* ── 阶梯 ─────────────────────────────────────────────── */
+  .stack { display: flex; flex-direction: column; }
+  .line {
+    --ink-c: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift));
+    display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+    padding: 5px 0 5px var(--x, 0); transition: background .2s;
+  }
+  /* 窄屏上阶梯要让位：横向空间比这个隐喻重要 */
+  @media (max-width: 680px) { .line { padding-left: 0; } }
+  .line.on { background: var(--paper); box-shadow: inset 2px 0 0 var(--live); }
+  /* 墨点即播放键 */
+  .one {
+    width: 13px; height: 13px; flex: 0 0 13px; padding: 0; cursor: pointer;
+    background: var(--ink-c, var(--ink-2)); border: none; border-radius: 0;
+    transition: transform .16s, opacity .16s; align-self: center;
+  }
+  .one:hover { transform: scale(1.25); }
+  .one:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+  .one.blank { background: transparent; border: 1px solid var(--rule); cursor: default; }
+  .ai .one { opacity: .78; }
+  .who {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em;
+    color: var(--ink-c, var(--dust)); min-width: 7em;
+  }
+  .real .who { font-weight: 500; }
+  .said { font-family: var(--font-display); font-size: 20px; color: var(--ink); flex: 1 1 16em; }
+  .ai .said { color: var(--ink-2); }
+  .wk-cta { font-family: var(--font-ui); font-size: 13px; margin: 22px 0 0; }
   .wk-cta a { color: var(--cut-lit); text-decoration: none; }
   .wk-cta a:hover { text-decoration: underline; }
-  h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px; }
-  .card {
-    background: var(--night-2); border: 1px solid var(--rule); padding: 24px 22px;
-    text-decoration: none; display: flex; flex-direction: column; gap: 8px;
-    transition: border-color .2s, transform .2s;
+
+  /* ── 四个入口：去掉方框，改成四条墨条 ──────────────────── */
+  .ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 22px; margin: 46px 0 0; }
+  .ways a {
+    display: flex; flex-direction: column; gap: 3px; text-decoration: none;
+    border-top: 2px solid var(--rule); padding: 11px 0 0; transition: border-color .2s;
   }
-  .card:hover { border-color: var(--cut); transform: translateY(-2px); }
-  .card:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
-  .card h3 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--cut); margin: 0; }
-  .sit { font-size: 14.5px; color: var(--ink-2); margin: 0; }
-  .meta { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); margin: 0; letter-spacing: .06em; }
+  .ways a:hover { border-top-color: var(--cut); }
+  .ways a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 3px; }
+  .ways b { font-family: var(--font-display); font-size: 17px; color: var(--cut); font-weight: 700; }
+  .ways span { font-family: var(--font-ui); font-size: 12px; color: var(--dust); }
+
+  /* ── 挑一出戏：条目，不是卡片 ──────────────────────────── */
+  .plays { margin-top: 64px; }
+  .play {
+    display: block; text-decoration: none; padding: 20px 0 18px;
+    border-top: 1px solid var(--rule); transition: background .2s;
+  }
+  /* h2 降级成印工批注：视觉上让位给戏名，语义上仍是这一节的标题 */
+  .plays .slug { padding-bottom: 10px; margin: 0; font-weight: 400; }
+  .play:first-of-type { border-top-width: 2px; border-top-color: var(--ink-2); }
+  .play:hover { background: var(--night-2); }
+  .play:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .play h3 {
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 3.2vw, 31px);
+    color: var(--cut); margin: 0 0 4px; letter-spacing: .02em;
+  }
+  .play .sit { font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-2); margin: 0 0 12px; max-width: 42em; }
+  .play .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; }
+  .dots { display: flex; gap: 3px; }
+  .dots i { width: 11px; height: 11px; display: block;
+    background: color-mix(in oklab, var(--c), var(--ink) var(--ink-lift)); }
+  .names, .beats { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; color: var(--dust); }
+  .beats { opacity: .6; }
+
   footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--rule); }
-  footer p { font-size: 13.5px; color: var(--dust); margin: 0; }
+  footer p { font-family: var(--font-ui); font-size: 13px; color: var(--dust); margin: 0; }
   footer .second { margin-top: 8px; }
   footer a { color: var(--cut-lit); text-decoration: none; }
 </style>
