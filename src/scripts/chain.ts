@@ -1,4 +1,5 @@
 import { setPlayIcon } from './play-icon';
+import { pan } from './spatial';
 
 /**
  * 「N 地连听」——把同一拍的各方言音频连着放完。
@@ -13,6 +14,10 @@ import { setPlayIcon } from './play-icon';
  * generation 令牌作废上一轮的回调（pause() 触发的 AbortError 可能几秒后才
  * resolve，不作废就会劫持后一次播放）；但**暂停不递增 generation**，因为
  * 暂停后那个 audio 还要接着用，它的 'ended' 还得把连听推到下一列。
+ *
+ * 每一列还带一个声像值（data-pan，北在左南在右，见 src/lib/geo.ts）。连听
+ * 因此不再是四段音频首尾相接，而是一次从北到南的移动——声音从它那一列在
+ * 屏幕上的位置传来。空间化失败一律静默降级成普通播放。
  */
 
 const GAP_MS = 320;
@@ -56,6 +61,7 @@ export function initChain(root: HTMLElement): void {
     paused = false;
     const my = ++generation;
     audio = new Audio(col.dataset.audio!);
+    pan(audio, Number(col.dataset.pan ?? 0));
     audio.addEventListener('ended', () => {
       if (my !== generation) return;
       setPlayIcon(btnOf(col), 'play');

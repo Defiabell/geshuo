@@ -26,6 +26,18 @@ import { TURNSTILE_SITEKEY } from '../lib/config';
       <input id="place" type="text" placeholder="山东德州 · 陵城区 · 糜镇" autocomplete="off" />
     </label>
     <label>
+      <span class="k">你哪年生人 <em>选填</em></span>
+      <select id="age">
+        <option value="">不说</option>
+        <option value="pre70">70 前</option>
+        <option value="70s">70 后</option>
+        <option value="80s">80 后</option>
+        <option value="90s">90 后</option>
+        <option value="00s">00 后</option>
+      </select>
+      <span class="hint">同一个县，你和你爸妈说得未必一样——这一栏是站上唯一一根时间轴。</span>
+    </label>
+    <label>
       <span class="k">怎么找到你 <em>选填</em></span>
       <input id="contact" type="text" placeholder="邮箱 / GitHub 用户名" autocomplete="off" />
     </label>
@@ -116,6 +128,9 @@ import { TURNSTILE_SITEKEY } from '../lib/config';
   .who label { display: flex; flex-direction: column; gap: 6px; }
   .k { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--dust); letter-spacing: .06em; }
   .k em { font-style: normal; color: var(--cut); font-size: 11.5px; margin-left: 6px; }
+  select { font: inherit; font-size: 15px; padding: 11px 14px; width: 100%; box-sizing: border-box;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
+  select:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
   input, textarea {
     font: inherit; font-size: 15px; padding: 11px 14px; width: 100%; box-sizing: border-box;
     background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg);

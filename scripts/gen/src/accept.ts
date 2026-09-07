@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { loadScenes } from '../../../src/lib/content';
 import { measureDurationMs } from './duration';
-import type { Place, Take } from '../../../src/lib/types';
+import type { AgeBand, Place, Take } from '../../../src/lib/types';
 
 /**
  * 把审听通过的投稿录音接进站点。
@@ -34,7 +34,7 @@ const TEXTS = join(INBOX, 'texts.yaml');
 /** R2 对象上的投稿元数据。`said` 是投稿人自己写的那句，`ref` 是 AI 的普通话参考 */
 interface Meta {
   place?: string; sceneId?: string; beatId?: string; contact?: string; note?: string;
-  said?: string; ref?: string; hasAudio?: string;
+  said?: string; ref?: string; hasAudio?: string; age?: string;
 }
 interface Obj { key: string; custom_metadata?: Meta }
 
@@ -43,6 +43,8 @@ const SAME_AS_AI = new Set(['同ai', '同AI', '=ai', '=AI', '同上', '一样'])
 
 interface Draft {
   place: Place;
+  /** 说话人代际，来自投稿表单；可选 */
+  age?: AgeBand;
   contributor?: string;
   scenes: Record<string, Record<string, { intent?: string; ai?: string; ai_mandarin?: string; said: string; mandarin?: string; note?: string }>>;
 }
@@ -85,6 +87,7 @@ function draft() {
   const scenes = loadScenes(DATA_DIR);
 
   const place = objs.find((o) => o.custom_metadata?.place)?.custom_metadata?.place ?? '';
+  const ageGuess = objs.find((o) => o.custom_metadata?.age)?.custom_metadata?.age ?? '';
   const grouped: Record<string, string[]> = {};
   // 投稿人在网页上自己写的那句，按 场景/拍 索引，用来预填草稿。
   // 网页表单加了输入框之后，多数投稿会自带这句——不该再让审稿人凭空重写一遍。
@@ -119,6 +122,7 @@ function draft() {
     '  dialectId: jilu',
     '',
     "contributor: ''   # 想署名就写个称呼，留空则不署",
+    `age: ${JSON.stringify(ageGuess)}   # 代际：pre70 / 70s / 80s / 90s / 00s，不确定就留空`,
     '',
     'scenes:',
   ];
@@ -210,6 +214,7 @@ function accept() {
       // 页面上会明写"以音为准"。要逐字的那天再手工改成 verbatim。
       transcript: 'approximate',
       ...(d.contributor ? { contributor: d.contributor } : {}),
+      ...(d.age ? { age: d.age } : {}),
       lines: scene.beats.filter((b) => b.speakerRole === 'none' || beats[b.id]?.said?.trim()).map((b) => {
         if (b.speakerRole === 'none') {
           // 空拍沿用骨架里的处理：不配音频

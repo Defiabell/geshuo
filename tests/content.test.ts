@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadScenes, loadTakes, loadPlaces, loadSite, validateContent, takesForBeat } from '../src/lib/content';
 import { loadDialects } from '../src/lib/dialect-tree';
+import { AGE_BANDS, AGE_LABELS } from '../src/lib/types';
 import type { Dialect, Take, Scene } from '../src/lib/types';
 
 const DATA_DIR = new URL('../src/data/', import.meta.url).pathname;
@@ -210,6 +211,29 @@ describe('validateContent', () => {
       beats: [{ id: 'b1', order: 1, intent: 'i1', speakerRole: 'none' }],
     };
     expect(() => validateContent(new Map([['s6', badScene]]), [], dialects, new Map())).toThrow(/空拍保留值/);
+  });
+});
+
+describe('代际轴', () => {
+  const dialects = loadDialects(DATA_DIR);
+  const places = loadPlaces(DATA_DIR);
+
+  // age 拼错会让这根轴静默失效：标签渲染成空，而页面上看不出任何异常。
+  // 跟 verification / source / transcript 是同一类问题——能被悄悄关掉的标注
+  // 必须在构建期炸掉。
+  it('age 拼错就抛错，不许静默渲染成空', () => {
+    const p = { ...perf([{ beatId: 'b1' }, { beatId: 'b2' }]), age: '八零后' as never };
+    expect(() => validateContent(new Map([['s', scene]]), [p], dialects, places))
+      .toThrow(/age 非法/);
+  });
+
+  it('不填 age 是合法的——问年龄本身就是门槛，不能因为一根轴把人挡在外面', () => {
+    const p = perf([{ beatId: 'b1' }, { beatId: 'b2' }]);
+    expect(() => validateContent(new Map([['s', scene]]), [p], dialects, places)).not.toThrow();
+  });
+
+  it('五个代际标签都有中文名，渲染不出 undefined', () => {
+    for (const b of AGE_BANDS) expect(AGE_LABELS[b]).toBeTruthy();
   });
 });
 

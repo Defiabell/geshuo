@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
 import { loadSite } from '../lib/content';
 import { identityOf } from '../lib/identity';
+import { panFor } from '../lib/geo';
+import { colorFor } from '../lib/palette';
 
 // 首页不走 getStaticPaths，属于顶层 frontmatter 作用域，可以直接用
 // process.cwd() 声明常量——理由同 [scene]/compare/[beat].astro 里的注释：
@@ -17,11 +19,35 @@ const weeklies = Array.from(scenes.values())
   .filter((s) => s.weekly)
   .sort((a, b) => (a.weekly! < b.weekly! ? 1 : -1));
 const featured = weeklies[0];
+/**
+ * 首页要出声。
+ *
+ * 在此之前首页有 0 个音频元素、0 个按钮——一个关于声音的网站，front door
+ * 是哑的。整个价值主张是「同一句话在几个地方并排响」，而不点进去的人永远
+ * 体验不到。这是漏斗第一格漏了，不是小瑕疵。
+ *
+ * 所以本周那一句直接搬到首屏，带播放键、带声像。按纬度从北到南排，连听
+ * 时声音也从左耳走到右耳（见 src/lib/geo.ts 的 panFor）。
+ */
 const featuredLines = featured
   ? takes
       .filter((p) => p.sceneId === featured.id)
-      .map((p) => ({ name: identityOf(p, dialects, places).name, said: p.lines[0]?.textDialect ?? '' }))
+      .map((p) => {
+        const id = identityOf(p, dialects, places);
+        const line = p.lines[0];
+        return {
+          name: id.name,
+          said: line?.textDialect ?? '',
+          audio: line?.audio ?? '',
+          pan: panFor(id.lat),
+          color: colorFor(id),
+          human: p.source === 'human',
+          lat: id.lat ?? -90,
+        };
+      })
+      .sort((a, b) => b.lat - a.lat)
   : [];
+const featuredPlayable = featuredLines.filter((l) => l.audio).length;
 
 // 首页那句宣传语里的地名从数据推出来，不写死。
 // 2026-09-05 的教训：原文写着「在德州、青岛、广州之间横着听过去」，而德州和青岛
@@ -55,27 +81,44 @@ const cards = Array.from(scenes.values())
     </p>
   </header>
 
+  {featured && (
+    <section class="hear">
+      <div class="wk-eyebrow">一句话挑战 · {featured.weekly}</div>
+      <h2 class="wk-title">{featured.title}</h2>
+      <p class="wk-sit">{featured.situation}</p>
+
+      {featuredPlayable > 1 && (
+        <div class="wk-bar">
+          <button class="btn-chain" id="chain" data-idle={`▶ ${featuredPlayable} 地连听`}>
+            ▶ {featuredPlayable} 地连听
+          </button>
+          <span class="wk-hint">从北到南连着放完。戴耳机——声音会从左边走到右边。</span>
+        </div>
+      )}
+
+      <div class="wk-lines">
+        {featuredLines.map(({ name, said, audio, pan, color, human }) => (
+          <div class={`col wk-line ${human ? 'real' : 'ai'}`}
+               data-audio={audio} data-pan={pan} style={`--c:${color}`}>
+            {audio
+              ? <button class="one" type="button" aria-label={`播放${name}`}>▶</button>
+              : <span class="one blank" aria-hidden="true">·</span>}
+            <span class="wk-name">{name}</span>
+            <span class={human ? 'wk-said grain-real' : 'wk-said grain-ai'}>{said}</span>
+          </div>
+        ))}
+      </div>
+
+      <p class="wk-cta"><a href="/weekly/">你们那儿怎么说？写一句或录一句 →</a></p>
+    </section>
+  )}
+
   <nav class="ways">
     <a href="/guess/"><b>盲听猜方言</b><span>不给标签，猜是哪儿的</span></a>
     <a href="/map/"><b>方言地图</b><span>看看你那儿点亮了没有</span></a>
     <a href="/record/"><b>录一段</b><span>网页上直接录，不用注册</span></a>
     <a href="/swearing/"><b>脏话也是方言</b><span>立场说明 · 有投票</span></a>
   </nav>
-
-  {featured && (
-    <section class="weekly">
-      <a class="wk" href="/weekly/">
-        <div class="wk-eyebrow">一句话挑战 · {featured.weekly}</div>
-        <h2 class="wk-title">{featured.title}</h2>
-        <div class="wk-lines">
-          {featuredLines.map(({ name, said }) => (
-            <div class="wk-line"><span class="wk-name">{name}</span><span class="wk-said">{said}</span></div>
-          ))}
-        </div>
-        <p class="wk-cta">你们那儿怎么说？录一句，十五秒 →</p>
-      </a>
-    </section>
-  )}
 
   <section>
     <h2>挑一出戏</h2>
@@ -101,6 +144,12 @@ const cards = Array.from(scenes.values())
   </footer>
 </Base>
 
+<script>
+  import { initChain } from '../scripts/chain';
+  const hear = document.querySelector<HTMLElement>('.hear');
+  if (hear) initChain(hear);
+</script>
+
 <style>
   .top { padding: 64px 0 24px; display: flex; flex-direction: column; gap: 14px; }
   .eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 12px; letter-spacing: .22em; color: var(--dust); }
@@ -118,21 +167,42 @@ const cards = Array.from(scenes.values())
   .ways a:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
   .ways b { font-family: "Noto Sans SC", sans-serif; font-size: 14.5px; color: var(--cut); font-weight: 600; }
   .ways span { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--dust); }
-  .weekly { padding-top: 34px; }
-  .wk {
-    display: block; text-decoration: none;
-    background: var(--night-2); border: 1px solid var(--rule); border-left: 3px solid var(--cut);
-    padding: 24px 26px; transition: border-color .2s, transform .2s;
-  }
-  .wk:hover { border-color: var(--cut); transform: translateY(-2px); }
-  .wk:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  /* 首屏播放器：这是整个站唯一一个「不点也知道要干嘛」的东西 */
+  .hear { margin: 34px 0 8px; padding: 24px 26px 22px; background: var(--night-2);
+          border-left: 3px solid var(--cut); }
   .wk-eyebrow { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; letter-spacing: .2em; color: var(--dust); }
-  .wk-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); color: var(--cut); margin: 8px 0 16px; }
-  .wk-lines { display: flex; flex-direction: column; gap: 6px; }
-  .wk-line { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
-  .wk-name { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--dust); letter-spacing: .08em; min-width: 5.5em; }
-  .wk-said { font-size: 17px; color: var(--ink-2); }
-  .wk-cta { font-family: "Noto Sans SC", sans-serif; font-size: 13px; color: var(--cut-lit); margin: 18px 0 0; }
+  .wk-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4.4vw, 40px);
+              color: var(--cut); margin: 8px 0 4px; }
+  .wk-sit { font-size: 14px; color: var(--ink-2); margin: 0 0 18px; max-width: 34em; }
+
+  .wk-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .btn-chain { font-family: "Noto Sans SC", sans-serif; font-size: 14.5px; cursor: pointer;
+               background: var(--cut); color: var(--paper); border: 1px solid var(--cut);
+               padding: 11px 22px; border-radius: 2px; transition: background .18s; }
+  .btn-chain:hover { background: var(--cut-lit); border-color: var(--cut-lit); }
+  .btn-chain:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .wk-hint { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--dust); }
+
+  .wk-lines { display: flex; flex-direction: column; gap: 2px; }
+  .wk-line { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+             padding: 7px 10px; margin-left: -10px; border-radius: 2px;
+             transition: background .2s; }
+  /* 正在响的那一列亮起来——这是连听时唯一的进度指示 */
+  .wk-line.on { background: var(--paper); box-shadow: inset 2px 0 0 var(--live); }
+  .one { font-size: 11px; line-height: 1; cursor: pointer; color: var(--c, var(--ink-2));
+         background: none; border: 1px solid currentColor; border-radius: 50%;
+         width: 21px; height: 21px; flex: 0 0 21px; padding: 0; }
+  .one:hover { background: var(--c, var(--ink-2)); color: var(--paper); }
+  .one:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .one.blank { border-color: var(--rule); color: var(--rule); cursor: default; }
+  .wk-name { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--c, var(--dust));
+             letter-spacing: .08em; min-width: 6em; }
+  .real .wk-name { font-weight: 700; }
+  .wk-said { font-size: 17px; color: var(--ink); flex: 1 1 16em; }
+  .ai .wk-said { color: var(--ink-2); }
+  .wk-cta { font-family: "Noto Sans SC", sans-serif; font-size: 13px; margin: 20px 0 0; }
+  .wk-cta a { color: var(--cut-lit); text-decoration: none; }
+  .wk-cta a:hover { text-decoration: underline; }
   h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--cut); margin: 0 0 20px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px; }
   .card {

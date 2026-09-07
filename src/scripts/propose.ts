@@ -96,6 +96,7 @@ export function initPropose(root: ParentNode, sitekey?: string): void {
     fd.set('kind', 'scene');
     fd.set('place', place);
     fd.set('contact', val('#contact'));
+    fd.set('age', root.querySelector<HTMLSelectElement>('#age')?.value ?? '');
     fd.set('title', title);
     fd.set('situation', situation);
     fd.set('beats', JSON.stringify(beats));

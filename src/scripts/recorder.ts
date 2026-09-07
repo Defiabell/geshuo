@@ -171,6 +171,7 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
       if (st.blob) fd.set('audio', st.blob, 'clip');
       fd.set('place', place);
       fd.set('contact', contactEl?.value.trim() ?? '');
+      fd.set('age', root.querySelector<HTMLSelectElement>('#age')?.value ?? '');
       fd.set('sceneId', el.dataset.scene ?? '');
       fd.set('beatId', el.dataset.beat ?? '');
       // said 是投稿人自己写的那句；ref 是 AI 的普通话参考，只用于审核对照。
@@ -185,10 +186,51 @@ export function initRecorder(root: Document | HTMLElement, sitekey?: string): vo
         if (!res.ok) throw new Error(data.error ?? `上传失败（${res.status}）`);
         say(st.blob ? '收到了，谢谢 —— 会有人听过之后上站' : '收到了，谢谢 —— 会有人看过之后上站', 'ok');
         sendBtn.hidden = true;
+        // 投稿成功那一刻，人还在engaged状态——这是唯一一个叫得动他去拉上一辈
+        // 的时机。同一个县、差三十年，是这个站最想要、也最拿不到的东西。
+        showPassOn(root);
       } catch (e) {
         say((e as Error).message || '上传失败，过会儿再试', 'bad');
         sendBtn.disabled = false;
       }
     });
   }
+}
+
+/**
+ * 「传给上一辈」。
+ *
+ * 代际轴是这个站唯一一根时间轴，但它自己长不出数据：一个人只能填一个代际。
+ * 唯一能让它长起来的动作，是让已经录完的人把链接递给上一辈——而唯一叫得动
+ * 他的时刻，就是他刚录完、还没关页面的那几秒。
+ *
+ * 只弹一次：弹第二遍就成了骚扰。
+ */
+let passShown = false;
+function showPassOn(root: Document | HTMLElement): void {
+  if (passShown) return;
+  passShown = true;
+
+  const box = document.createElement('div');
+  box.className = 'pass-on';
+  box.innerHTML = `
+    <p><b>再帮一个忙？</b>把这一页发给你爸妈或者姥姥，让他们也说一遍。
+    同一个县、差三十年，那是这个站最想要、也最拿不到的东西。</p>
+    <button type="button">复制这一页的链接</button>
+    <span class="tip" role="status"></span>`;
+
+  const btn = box.querySelector('button')!;
+  const tip = box.querySelector('.tip')!;
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      tip.textContent = '复制好了';
+    } catch {
+      // 剪贴板 API 在非安全上下文或没授权时会抛——别把地址藏起来，直接显出来
+      tip.textContent = location.href;
+    }
+  });
+
+  const anchor = root.querySelector('.fine') ?? root.querySelector('.scene');
+  anchor?.parentNode?.insertBefore(box, anchor);
 }

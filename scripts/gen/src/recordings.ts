@@ -159,7 +159,7 @@ async function pull() {
 <article class="rec" data-id="${esc(id)}" data-key="${esc(o.key)}">
   <header>
     <span class="id">${esc(id)}</span>
-    <span class="place">${esc(m.place || '（没填地点）')}</span>
+    <span class="place">${esc(m.place || '（没填地点）')}${m.age ? ` · ${esc(m.age)}` : ''}</span>
     <span class="when">${esc(o.last_modified.replace('T', ' ').slice(0, 16))}</span>
     <span class="size">${(o.size / 1024).toFixed(0)} KB</span>
   </header>

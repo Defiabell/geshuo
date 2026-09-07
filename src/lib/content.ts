@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import { loadDialects } from './dialect-tree';
-import { NO_SPEAKER, TAKE_SOURCES, TRANSCRIPTS, VERIFICATIONS, VOICE_PROFILES } from './types';
+import { AGE_BANDS, NO_SPEAKER, TAKE_SOURCES, TRANSCRIPTS, VERIFICATIONS, VOICE_PROFILES } from './types';
 import type { Dialect, DialectLevel, Place, Scene, Take, TakeLine } from './types';
 
 /** TTS 到不了县级颗粒——point（点）与 subcluster（小片）都在县域颗粒上，禁止挂 TTS 演绎 */
@@ -147,6 +147,13 @@ export function validateContent(
       throw new Error(
         `演绎 ${p.id} 的 source 非法：${p.source}——` +
           `必须是 ${TAKE_SOURCES.join(' / ')} 之一，否则粒度声明条会静默消失`,
+      );
+    }
+
+    // 代际拼错会让那根轴静默失效：标签渲染成空，而对比页看不出任何异常
+    if (p.age !== undefined && !AGE_BANDS.includes(p.age)) {
+      throw new Error(
+        `演绎 ${p.id} 的 age 非法：${p.age}——必须是 ${AGE_BANDS.join(' / ')} 之一`,
       );
     }
 

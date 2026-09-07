@@ -42,6 +42,8 @@ const MAX_SITUATION = 200;
 const MAX_INTENT = 100;
 /** 一场戏最多几拍。六拍是站上现有最长的戏，八拍留点余量，再多就不是一场戏了 */
 const MAX_BEATS = 8;
+/** 代际白名单，与 src/lib/types.ts 的 AGE_BANDS 一致 */
+const AGE_BANDS = new Set(['pre70', '70s', '80s', '90s', '00s']);
 /** 过了人机验证的，每 IP 每天可以传这么多 */
 const IP_PER_DAY = 30;
 /**
@@ -282,6 +284,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       // AI 那句普通话参考，留着是为了审核时对照「他说的是不是这个意思」
       ref: cleanText(form.get('ref'), MAX_TEXT),
       contact: cleanText(form.get('contact'), MAX_TEXT),
+      // 代际：白名单收，别的一律丢。这个字段会直接进内容模型，
+      // 不能让投稿人往里塞任意字符串
+      age: AGE_BANDS.has(clean(form.get('age'))) ? clean(form.get('age')) : '',
       note: cleanText(form.get('note'), MAX_TEXT),
       bytes: String(audio?.size ?? 0),
       hasAudio: audio ? 'yes' : 'no',

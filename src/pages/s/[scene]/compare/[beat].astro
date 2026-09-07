@@ -4,9 +4,11 @@ import Base from '../../../../layouts/Base.astro';
 import { levelLabel } from '../../../../lib/dialect-tree';
 import { loadSite, takesForBeat } from '../../../../lib/content';
 import { identityOf } from '../../../../lib/identity';
+import { panFor } from '../../../../lib/geo';
 import { chainSeconds } from '../../../../lib/audio';
 import { colorFor } from '../../../../lib/palette';
 import { VERIFICATION_LABELS, VERIFICATION_TAG_CLASS } from '../../../../lib/verification';
+import { AGE_LABELS } from '../../../../lib/types';
 
 export async function getStaticPaths() {
   // getStaticPaths() runs in its own isolated scope at build time — only
@@ -125,8 +127,9 @@ const enriched = columns.map((c, i) => {
     <div class="bar">
       <button class="btn-chain" id="chain" data-idle={`▶ ${playableCount} 地连听`}>▶ {playableCount} 地连听</button>
       <span class="bar-hint">
-        同一句话，各地连着放完{totalSeconds !== null && `——这一拍 ${totalSeconds} 秒`}
+        从北到南连着放完{totalSeconds !== null && `——这一拍 ${totalSeconds} 秒`}。戴耳机，声音会从左边走到右边。
       </span>
+      <button class="btn-save" id="save-card" type="button">存成图片</button>
     </div>
   )}
 
@@ -145,10 +148,12 @@ const enriched = columns.map((c, i) => {
     {enriched.map(({ dialect, take, line, sameAs }) => {
       const human = take.source === 'human';
       return (
-        <div class={`col ${human ? 'real' : 'ai'}`} data-audio={line.audio ?? ''} style={`--c:${colorFor(dialect)}`}>
+        <div class={`col ${human ? 'real' : 'ai'}`} data-pan={panFor(dialect.lat)} data-audio={line.audio ?? ''} style={`--c:${colorFor(dialect)}`}>
           <h2>
             <span class="nm">{dialect.name}</span>
-            <span class="lv2">{levelLabel(dialect.level)} · {human ? '真人' : 'AI'}</span>
+            <span class="lv2">
+              {levelLabel(dialect.level)} · {human ? '真人' : 'AI'}{take.age && ` · ${AGE_LABELS[take.age]}`}
+            </span>
             {line.audio && <button class="one" type="button" aria-label={`只听${dialect.name}`}>▶</button>}
           </h2>
           <p class={`said ${human ? 'grain-real' : 'grain-ai'}`}>{line.textDialect}</p>
@@ -166,8 +171,12 @@ const enriched = columns.map((c, i) => {
 
 <script>
   import { initChain } from '../../../../scripts/chain';
+  import { initCard } from '../../../../scripts/card';
   const el = document.getElementById('compare');
-  if (el) initChain(el.parentElement ?? document.body);
+  const root = el?.parentElement ?? document.body;
+  if (el) initChain(root);
+  // 可分享的单位是「一句」不是「一场」——没有人会转发一场戏
+  initCard(root);
 </script>
 
 <style>
@@ -211,6 +220,12 @@ const enriched = columns.map((c, i) => {
   }
   .btn-chain:hover { background: var(--live); }
   .btn-chain:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+  .btn-save { font-family: "Noto Sans SC", sans-serif; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--rule); background: transparent; color: var(--ink-2);
+    padding: 8px 15px; border-radius: 2px; margin-left: auto; transition: border-color .18s, color .18s; }
+  .btn-save:hover { border-color: var(--cut); color: var(--cut); }
+  .btn-save:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 2px; }
+  .btn-save[disabled] { opacity: .5; cursor: default; }
   .bar-hint { font-family: var(--font-ui); font-size: 12.5px; color: var(--dust); }
 
   /* 时间轴：按真实时长切分。哪个方言把同一句话说得更长，一眼可见 */

@@ -182,6 +182,29 @@ export interface TakeLine {
  * （placeCode）。不能都有，也不能都没有——这条由 validateContent 强制。
  * 两者不对称是故意的：AI 只能到区级抽象，真人永远是某个具体的县。
  */
+/**
+ * 代际。**这是这个站唯一一根时间轴。**
+ *
+ * 方言的差异不只在地图上，也在同一个家里的两代人之间——而后者才是这件事
+ * 真正的情绪所在：语言消失不是发生在省与省之间，是发生在你和你爸妈之间。
+ *
+ * 语保工程结构上给不出这个：它的方法论是「每个调查点选一名合格发音人」，
+ * 一点一个答案，代际差被方法本身抹掉了。我们允许一个地方有多份演绎，所以
+ * 顺手就能有这根轴——只多问一个可选字段。
+ *
+ * 可选，永远可选。问年龄本身就是门槛，为了一根轴把人挡在外面不划算。
+ */
+export const AGE_BANDS = ['pre70', '70s', '80s', '90s', '00s'] as const;
+export type AgeBand = (typeof AGE_BANDS)[number];
+
+export const AGE_LABELS: Record<AgeBand, string> = {
+  pre70: '70 前',
+  '70s': '70 后',
+  '80s': '80 后',
+  '90s': '90 后',
+  '00s': '00 后',
+};
+
 export interface Take {
   id: string;
   sceneId: string;
@@ -194,6 +217,8 @@ export interface Take {
   /** 文字与录音的对应程度；不填等于 verbatim。真人录音一般是 approximate */
   transcript?: Transcript;
   contributor?: string;
+  /** 说话人的代际。可选——问年龄本身就是门槛 */
+  age?: AgeBand;
   verifier?: string;
   /** 这一遍录到的拍。真人可以只录一部分；AI 必须录全 */
   lines: TakeLine[];

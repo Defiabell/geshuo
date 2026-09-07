@@ -83,6 +83,18 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
           <input id="place" type="text" placeholder="山东德州 · 陵城区 · 糜镇" autocomplete="off" />
           <span class="hint">越细越好。乡镇比县好，县比市好。</span>
         </label>
+    <label class="f">
+      <span class="k">你哪年生人 <em>选填</em></span>
+      <select id="age">
+        <option value="">不说</option>
+        <option value="pre70">70 前</option>
+        <option value="70s">70 后</option>
+        <option value="80s">80 后</option>
+        <option value="90s">90 后</option>
+        <option value="00s">00 后</option>
+      </select>
+      <span class="hint">同一个县，你和你爸妈说得未必一样——这一栏是站上唯一一根时间轴。</span>
+    </label>
         <label class="f">
           <span class="k">怎么找到你 <em>选填</em></span>
           <input id="contact" type="text" placeholder="邮箱 / GitHub 用户名" autocomplete="off" />
@@ -145,7 +157,29 @@ const totalSeconds = chainSeconds(curCols.map((c) => c.line));
   initRecorder(document, (window as unknown as { __SITEKEY__?: string }).__SITEKEY__);
 </script>
 
+
+<!--
+  .pass-on 是 recorder.ts 在提交成功后用 innerHTML 插进来的，所以样式必须
+  is:global——Astro 的 scoped style 靠 data-astro-cid-* 生效，运行时新建的
+  元素没有那个属性，一条都套不上（2026-09-06 在 /propose/ 上踩过一次）。
+-->
+<style is:global>
+  .pass-on { margin: 26px 0 0; padding: 16px 18px; background: var(--paper);
+             border-left: 3px solid var(--cut-lit); max-width: 40em; }
+  .pass-on p { margin: 0 0 12px; font-size: 14.5px; color: var(--ink-2); line-height: 1.8; }
+  .pass-on b { color: var(--cut); }
+  .pass-on button { font-family: "Noto Sans SC", sans-serif; font-size: 13.5px; cursor: pointer;
+                    border: 1px solid var(--cut); background: transparent; color: var(--cut);
+                    padding: 8px 16px; border-radius: 2px; }
+  .pass-on button:hover { background: var(--cut); color: var(--paper); }
+  .pass-on .tip { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px;
+                  color: var(--dust); margin-left: 10px; word-break: break-all; }
+</style>
+
 <style>
+  .f select { font: inherit; font-size: 15px; padding: 11px 14px;
+    background: var(--night-2); border: 1px solid var(--rule); color: var(--body-fg); }
+  .f select:focus-visible { outline: 2px solid var(--cut-lit); outline-offset: 1px; }
   .say { display: block; margin: 10px 0 12px; }
   .say .k { display: block; font-family: "Noto Sans SC", sans-serif; font-size: 12px;
             letter-spacing: .08em; color: var(--ink-2); margin-bottom: 5px; }
