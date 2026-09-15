@@ -165,6 +165,6 @@ pnpm deploy    # astro build && wrangler pages deploy dist
 ## 许可
 
 - **代码**：[MIT](LICENSE)
-- **方言数据与台词**（`src/data/`）：[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.zh)——署名，且以相同方式共享
+- **方言数据与台词**（`src/data/`）：[CC BY-SA 4.0](src/data/LICENSE)——署名，且以相同方式共享
 
 方言是所有说它的人的，不是谁的私产。用得上就拿去，记得注明出处，也让下一个人能同样拿去用。
