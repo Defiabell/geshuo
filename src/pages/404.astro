@@ -1,0 +1,35 @@
+---
+/**
+ * 真 404。
+ *
+ * Astro 把这个文件产成 dist/404.html；Cloudflare Pages 对根目录的 404.html
+ * 会以 **HTTP 404** 状态返回，而不是把首页当 SPA 兜底、200 回一个假页面。
+ * 没有这个文件之前，任何乱打的地址都是 200——搜索引擎会把它们当成真页面收录。
+ */
+import Base from '../layouts/Base.astro';
+---
+<Base title="找不到这一页 — 各说各话" description="这一页不在戏里。" noindex>
+  <header class="top">
+    <p class="code">404</p>
+    <h1>这一页不在戏里</h1>
+  </header>
+  <div class="body">
+    <p>地址可能打错了，或者这出戏已经撤了。</p>
+    <p>
+      去 <a href="/">首页</a> 挑一出戏，
+      看 <a href="/map/">方言地图</a>，
+      或者 <a href="/record/">录一段</a>你自己的话。
+    </p>
+  </div>
+</Base>
+
+<style>
+  .top { padding: 30px 0 8px; }
+  .code {
+    font-family: var(--font-mono); font-size: 14px; letter-spacing: .12em;
+    color: var(--dust); margin: 0;
+  }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 54px); color: var(--cut); margin: 14px 0 24px; }
+  .body { max-width: 36em; font-size: 16px; color: var(--ink-2); }
+  .body a { color: var(--cut-lit); }
+</style>

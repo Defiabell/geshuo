@@ -33,6 +33,9 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
 // 正式地址是 geshuo.defiabell.com（astro.config 的 site）。旧的 geshuo.pages.dev 还在服务，
 // 每一页都要明说自己的正本在哪，否则搜索引擎会把两个域名当成两份内容。
 const canonical = new URL(path, Astro.site).href;
+// 分享卡：全站一张（public/og.png，由 scripts/og.py 生成）。微信／Slack／X 抓的是
+// 绝对地址，相对路径会被当成没有。
+const ogImage = new URL('/og.png', Astro.site).href;
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -44,6 +47,19 @@ const canonical = new URL(path, Astro.site).href;
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="各说各话" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
