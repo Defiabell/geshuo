@@ -4,6 +4,6 @@
  * 只有服务端函数读得到，绝不进代码。
  *
  * 换 widget 时改这一处；对应的域名白名单在 Cloudflare 后台
- * （当前允许 geshuo.pages.dev / localhost / 127.0.0.1，本地 dev 也能过）。
+ * （当前允许 geshuo.defiabell.com / geshuo.pages.dev / localhost / 127.0.0.1，本地 dev 也能过）。
  */
 export const TURNSTILE_SITEKEY = '0x4AAAAAAEkFYLEbUCZgV7GF';

@@ -30,6 +30,9 @@ const isHome = path === '/';
 // startsWith 让 /record/debt/ 也算在 /record/ 上。'/' 故意不进 NAV，
 // 否则它会 startsWith 匹配全站每一页。
 const isCurrent = (href: string) => path === href || path.startsWith(href);
+// 正式地址是 geshuo.defiabell.com（astro.config 的 site）。旧的 geshuo.pages.dev 还在服务，
+// 每一页都要明说自己的正本在哪，否则搜索引擎会把两个域名当成两份内容。
+const canonical = new URL(path, Astro.site).href;
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -40,6 +43,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
     <title>{title}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={canonical} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -69,6 +73,17 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
         <span class="mark" aria-hidden="true"></span>
       </header>
       <slot />
+      {/* 版权脚：这个站是 defiabell.com 下的一个项目，每页都说一声，回得去 */}
+      <footer class="colophon">
+        <p>作者 Jinkun · <a href="https://defiabell.com">defiabell.com</a></p>
+      </footer>
     </div>
   </body>
 </html>
+
+<style>
+  .colophon { margin-top: 48px; padding: 18px 0 28px; }
+  .colophon p { font-family: var(--font-ui); font-size: 12px; color: var(--dust); margin: 0; }
+  .colophon a { color: var(--dust); text-decoration: none; }
+  .colophon a:hover { color: var(--cut-lit); }
+</style>

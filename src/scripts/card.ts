@@ -134,7 +134,7 @@ export function initCard(root: ParentNode): void {
       ctx.fillText('各说各话', PAD, H - 60);
       ctx.fillStyle = '#9C948A';
       ctx.font = '400 25px "Noto Sans SC", sans-serif';
-      ctx.fillText('geshuo.pages.dev　·　你们那儿怎么说？', PAD + 150, H - 60);
+      ctx.fillText('geshuo.defiabell.com　·　你们那儿怎么说？', PAD + 150, H - 60);
 
       const url = cv.toDataURL('image/png');
       const a = document.createElement('a');

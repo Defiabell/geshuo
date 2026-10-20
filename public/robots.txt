@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://geshuo.defiabell.com/sitemap-index.xml

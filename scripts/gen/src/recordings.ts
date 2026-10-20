@@ -170,7 +170,7 @@ async function pull() {
     ? '<div class="play noaudio">只填了字，没有录音</div>'
     : `<div class="play"><b>真人</b><audio controls preload="none" src="${esc(local)}"></audio></div>`}
   ${ai.length ? `<div class="ai"><b>对照 AI</b>${ai
-    .map((a) => `<span class="one"><i>${esc(a.dialectId)}</i><audio controls preload="none" src="https://geshuo.pages.dev${esc(a.audio)}"></audio></span>`)
+    .map((a) => `<span class="one"><i>${esc(a.dialectId)}</i><audio controls preload="none" src="https://geshuo.defiabell.com${esc(a.audio)}"></audio></span>`)
     .join('')}</div>` : ''}
   <div class="meta">
     ${m.contact ? `联系：${esc(m.contact)}　` : ''}${m.note ? `备注：${esc(m.note)}` : ''}
