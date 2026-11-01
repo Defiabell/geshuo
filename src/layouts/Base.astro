@@ -1,7 +1,14 @@
 ---
 import '../styles/tokens.css';
-interface Props { title: string; description?: string; noindex?: boolean }
-const { title, description = '同一出戏，各地各演一遍。', noindex = false } = Astro.props;
+import { PERSON, SITE_DESCRIPTION, SITE_NAME, SITE_URL, WEBSITE_ID, jsonLdString } from '../lib/seo';
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+  /** Extra JSON-LD nodes (CreativeWork…) appended to the page @graph. */
+  jsonLd?: Record<string, unknown>[];
+}
+const { title, description = SITE_DESCRIPTION, noindex = false, jsonLd = [] } = Astro.props;
 
 /**
  * 全站导航。
@@ -36,6 +43,37 @@ const canonical = new URL(path, Astro.site).href;
 // 分享卡：全站一张（public/og.png，由 scripts/og.py 生成）。微信／Slack／X 抓的是
 // 绝对地址，相对路径会被当成没有。
 const ogImage = new URL('/og.png', Astro.site).href;
+
+// One JSON-LD @graph per page: the site and its author everywhere, plus what
+// the page knows about its own content (passed in via `jsonLd`).
+const graph = jsonLdString({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': WEBSITE_ID,
+      name: SITE_NAME,
+      alternateName: '方言场景剧场',
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      inLanguage: 'zh-CN',
+      author: { '@id': PERSON['@id'] },
+      publisher: { '@id': PERSON['@id'] },
+    },
+    PERSON,
+    {
+      '@type': 'WebPage',
+      '@id': canonical,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: 'zh-CN',
+      isPartOf: { '@id': WEBSITE_ID },
+      primaryImageOfPage: ogImage,
+    },
+    ...jsonLd,
+  ],
+});
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -47,6 +85,7 @@ const ogImage = new URL('/og.png', Astro.site).href;
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
+    <script type="application/ld+json" set:html={graph} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="各说各话" />
     <meta property="og:locale" content="zh_CN" />

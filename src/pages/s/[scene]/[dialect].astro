@@ -7,6 +7,8 @@ import LineCard from '../../../components/LineCard.astro';
 import { colorFor } from '../../../lib/palette';
 import { loadSite } from '../../../lib/content';
 import { identityOf } from '../../../lib/identity';
+import { PERSON, WEBSITE_ID } from '../../../lib/seo';
+import { lastmodOf } from '../../../lib/git-dates.mjs';
 
 export async function getStaticPaths() {
   // getStaticPaths() runs in its own isolated scope at build time — only
@@ -39,8 +41,31 @@ export async function getStaticPaths() {
 
 const { scene, take, dialect, siblings, allForScene } = Astro.props;
 const lineOf = (beatId: string) => take.lines.find((l) => l.beatId === beatId)!;
+
+// This page is one performance of one scene in one dialect: a CreativeWork
+// with the scene as its subject. A human take credits its contributor as
+// given in the yaml; an AI take says so in `creator` rather than pretending.
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+const dateModified = lastmodOf([`src/data/takes/${take.id}.yaml`, `src/data/scenes/${scene.id}.yaml`]);
+const jsonLd = [{
+  '@type': 'CreativeWork',
+  '@id': `${pageUrl}#take`,
+  name: `${scene.title} · ${dialect.name}`,
+  headline: `${scene.title} · ${dialect.name}`,
+  description: scene.situation,
+  genre: '方言场景剧',
+  inLanguage: 'zh',
+  about: { '@type': 'Thing', name: dialect.name },
+  ...(dateModified ? { dateModified } : {}),
+  author: { '@id': PERSON['@id'] },
+  ...(take.source === 'human' && take.contributor
+    ? { contributor: { '@type': 'Person', name: take.contributor } }
+    : { creator: { '@type': 'SoftwareApplication', name: 'AI 语音合成' } }),
+  mainEntityOfPage: pageUrl,
+  isPartOf: { '@id': WEBSITE_ID },
+}];
 ---
-<Base title={`${scene.title} · ${dialect.name} — 各说各话`} description={scene.situation}>
+<Base title={`${scene.title} · ${dialect.name} — 各说各话`} description={scene.situation} jsonLd={jsonLd}>
   <header class="top">
     <h1>{scene.title}</h1>
     <p class="situation">{scene.situation}</p>
