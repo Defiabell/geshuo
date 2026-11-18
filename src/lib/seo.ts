@@ -5,8 +5,12 @@
 // still gets a complete author node.
 export const SITE_URL = 'https://geshuo.defiabell.com/';
 export const SITE_NAME = '各说各话';
-/** Same sentence as the default <meta name="description"> in Base.astro. */
-export const SITE_DESCRIPTION = '同一出戏，各地各演一遍。';
+/**
+ * Default <meta name="description"> (Base.astro) and the WebSite JSON-LD description.
+ * Opens with the site's slogan, then says what the site is; keep it 60–120 characters.
+ */
+export const SITE_DESCRIPTION =
+  '同一出戏，各地各演一遍。各说各话是一个方言场景剧场：每场戏只定人物、情形和每一拍要说的意思，台词由各地用自己的方言说，同一拍的各地版本可以并排听。AI 合成的演绎只标到方言区，真人录音标到县。';
 export const WEBSITE_ID = `${SITE_URL}#website`;
 
 export const PERSON = {
